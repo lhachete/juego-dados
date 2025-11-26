@@ -1,12 +1,8 @@
-import { View, Text } from "react-native";
+import HomeScreen from "./screens/HomeScreen";
 import './global.css';
 
-export default function App() {
-  return (
-    <>
-      <View className="flex-1 items-center justify-center bg-green-500">
-        <Text className="text-white text-3xl">NativeWind funciona Adrian ✨</Text>
-      </View>
-    </>
-  );
-}
+const App = () => {
+  return <HomeScreen />;
+};
+
+export default App;
