@@ -6,6 +6,7 @@ module.exports = {
     './hooks/**/*.{js,ts,tsx,jsx}',
     './screens/**/*.{js,ts,tsx,jsx}',
     './utils/**/*.{js,ts,tsx,jsx}',
+    './app/**/*.{js,ts,tsx,jsx}',
   ],
 
   presets: [require('nativewind/preset')],

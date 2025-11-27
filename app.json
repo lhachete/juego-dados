@@ -1,8 +1,9 @@
 {
   "expo": {
-    "name": "my-expo-app",
-    "slug": "my-expo-app",
+    "name": "juego-dados",
+    "slug": "juego-dados",
     "version": "1.0.0",
+    "scheme": "royaldices",
     "web": {
       "bundler": "metro",
       "favicon": "./assets/favicon.png"

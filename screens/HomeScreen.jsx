@@ -1,4 +1,5 @@
 import { View, Image } from "react-native";
+import { Link } from "expo-router";
 import Button from "../components/Button";
 import Title from "../components/Title";
 import logo from "../assets/logo.png";
@@ -19,7 +20,9 @@ const HomeScreen = () => {
             />
 
             {/* Botones */}
-            <Button title="Jugar" onPress={() => console.log("Jugar presionado")} variant="filled" />
+            <Link href="/game-mode" asChild>
+                <Button title="Jugar" onPress={() => console.log("Jugar presionado")} variant="filled" />
+            </Link>
             {/* Botón Reglas solo texto subrayado */}
             <TextButton title="Reglas" onPress={() => console.log("Reglas presionado")} />
 
