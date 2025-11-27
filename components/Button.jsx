@@ -1,20 +1,47 @@
-import { Pressable, Text } from "react-native";
+import { Pressable, Text, StyleSheet } from "react-native";
 
 const Button = ({ title, onPress, variant = "filled" }) => {
-  const baseClass = "w-48 py-3 rounded-lg items-center justify-center mb-4";
-  const filledClass = "bg-yellow-500";
-  const outlineClass = "border border-white";
-
-  const textClass = variant === "filled" ? "text-black text-lg font-semibold" : "text-white text-lg font-semibold";
-
   return (
     <Pressable
-      className={`${baseClass} ${variant === "filled" ? filledClass : outlineClass}`}
       onPress={onPress}
+      style={[
+        styles.base,
+        variant === "filled" ? styles.filled : styles.outline
+      ]}
     >
-      <Text className={textClass}>{title}</Text>
+      <Text style={[styles.text, variant === "filled" ? styles.textFilled : styles.textOutline]}>
+        {title}
+      </Text>
     </Pressable>
   );
 };
+
+const styles = StyleSheet.create({
+  base: {
+    width: 192, // w-48 (48*4)
+    paddingVertical: 12, // py-3 (3*4)
+    borderRadius: 12, // rounded-lg (approx 12)
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 16, // mb-4 (4*4)
+  },
+  filled: {
+    backgroundColor: "#facc15", // bg-yellow-500
+  },
+  outline: {
+    borderWidth: 1,
+    borderColor: "#ffffff",
+  },
+  text: {
+    fontSize: 18, // text-lg
+    fontWeight: "600", // font-semibold
+  },
+  textFilled: {
+    color: "#000000",
+  },
+  textOutline: {
+    color: "#ffffff",
+  },
+});
 
 export default Button;
