@@ -11,7 +11,7 @@ const Title = ({ children }) => {
                 lineHeight: 70, // ajusta según el tamaño del texto
             }}
         >
-            Royal Dices
+            {children}
         </Text>
 
     );
