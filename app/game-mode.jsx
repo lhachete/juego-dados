@@ -2,44 +2,57 @@
 import { useState } from "react";
 import { View, Text, StyleSheet } from "react-native";
 import Button from "../components/Button";
+import { useGame } from "./contexts/GameContext";
+import { router } from "expo-router";
 
-const GameMode = ({ navigation }) => {
+const GameMode = () => {
+  const { setMode, setPlayType } = useGame();
   const [selectedMode, setSelectedMode] = useState(null);
 
   const handleSelectMode = (mode) => {
     setSelectedMode(mode);
+    setMode(mode);
   };
 
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Selecciona un modo de juego</Text>
 
-      {/* Botones principales */}
+      {/* Botón Modo Clásico */}
       <Button
         title="Modo Clásico"
         onPress={() => handleSelectMode("classic")}
         variant={selectedMode === "classic" ? "filled" : "outline"}
       />
+
+      {/* Botón Modo Craziest */}
       <Button
         title="Modo Craziest"
-        onPress={() => {}}
-        variant="outline"
+        onPress={() => handleSelectMode("craziest")}
+        variant={selectedMode === "craziest" ? "filled" : "outline"}
       />
 
-      {/* Opciones del modo clásico */}
+      {/* Opciones del modo Clásico */}
       {selectedMode === "classic" && (
         <View style={styles.subMenu}>
           <Text style={styles.subtitle}>¿De qué forma vas a jugar?</Text>
 
           <Button
             title="Manual"
-            onPress={() => navigation.navigate("/manual-mode")}
             variant="outline"
+            onPress={() => {
+              setPlayType("manual");
+              router.push("/player-selection");
+            }}
           />
+
           <Button
             title="Virtual"
-            onPress={() => {}}
             variant="outline"
+            onPress={() => {
+              setPlayType("virtual");
+              // más adelante implementamos su pantalla
+            }}
           />
         </View>
       )}
@@ -71,6 +84,5 @@ const styles = StyleSheet.create({
     color: "#ffffff",
     marginBottom: 16,
   },
-});
-
+})
 export default GameMode;

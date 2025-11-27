@@ -1,10 +1,10 @@
-import { Slot } from 'expo-router';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { Slot } from "expo-router";
+import { GameProvider } from "./contexts/GameContext";
 
-export default function Layout() {
-    return (
-        <SafeAreaProvider>
-            <Slot />
-        </SafeAreaProvider>
-    );
+export default function RootLayout() {
+  return (
+    <GameProvider>
+      <Slot />
+    </GameProvider>
+  );
 }
