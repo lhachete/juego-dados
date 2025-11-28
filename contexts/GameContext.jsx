@@ -5,7 +5,7 @@ const GameContext = createContext();
 export const GameProvider = ({ children }) => {
   const [mode, setMode] = useState(null);        // classic | craziest
   const [playType, setPlayType] = useState(null); // manual | virtual
-  const [players, setPlayers] = useState([]);     // lista jugadores
+  const [players, setPlayers] = useState(["",""]);     // lista jugadores
   const [scores, setScores] = useState({});       // { nombre: puntos }
 
   return (

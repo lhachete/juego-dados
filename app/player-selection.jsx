@@ -11,7 +11,7 @@ const PlayerSelection = () => {
   };
 
   const handleRemovePlayer = (index) => {
-    if (players.length === 1) return;
+    if (players.length === 2) return;
     const updated = players.filter((_, i) => i !== index);
     setPlayers(updated);
   };

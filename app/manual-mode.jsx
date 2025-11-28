@@ -8,67 +8,120 @@ import {
     Modal,
     Image,
 } from "react-native";
-
 import { useGame } from "../contexts/GameContext";
+
 
 const ManualMode = () => {
     const { players, scores, setScores } = useGame();
-
     const [turn, setTurn] = useState(0);
+    const [round, setRound] = useState(1);
     const [selectedFace, setSelectedFace] = useState(null);
+
     const [modalVisible, setModalVisible] = useState(false);
+    const [selectedCount, setSelectedCount] = useState(null);
+    //caras deshabilitadas
+    /* 
+    {
+    "Jugador 1": [2, 5],
+    "Jugador 2": [1],
+    "Jugador 3": []
+    }
+    */
+    const [disabledFaces, setDisabledFaces] = useState(
+        players.reduce((acc, player) => {
+            acc[player] = []; // cada jugador empieza sin figuras bloqueadas
+            return acc;
+        }, {})
+    );
+
+
 
     const currentPlayer = players[turn];
 
+    const TOTAL_ROUNDS = 13; // por ejemplo
+
+    // Al pulsar una figura → solo se selecciona (NO abre modal)
     const handleFacePress = (face) => {
-        setSelectedFace(face);
+    setSelectedFace(face);
+    setModalVisible(true);
+};
+
+
+    const openModal = () => {
+        if (!selectedFace) return;
+        setSelectedCount(null);
         setModalVisible(true);
     };
 
-    const handleSelectCount = (count) => {
-        // 🔹 Guardar puntos (esto lo ajustamos luego según reglas exactas)
+    const handleConfirmCount = () => {
+        if (!selectedCount) return;
+
         const prev = scores[currentPlayer] || 0;
-        const added = count; // de momento 1 punto por dado
+        const added = selectedCount;
+
         setScores({
             ...scores,
             [currentPlayer]: prev + added,
         });
 
-        // 🔹 Cerrar modal
+        // 🔹 Añadir la cara como deshabilitada SOLO al jugador actual
+        setDisabledFaces({
+            ...disabledFaces,
+            [currentPlayer]: [...disabledFaces[currentPlayer], selectedFace.id]
+        });
+
         setModalVisible(false);
 
-        // 🔹 Pasar al siguiente jugador
+        // Cambiar turno
         if (turn === players.length - 1) {
-            // Si era el último → más adelante pasará a la puntuación
             setTurn(0);
-            // aquí luego haremos navigation.navigate("/scoreboard");
+            setRound((r) => r + 1);
         } else {
             setTurn((t) => t + 1);
         }
+
+        setSelectedFace(null);
+        setSelectedCount(null);
     };
+
 
     return (
         <View style={styles.container}>
-            {/* ---- Turno del jugador ---- */}
-            <Text style={styles.title}>Turno de {currentPlayer}</Text>
+            {/* ---- RONDA ---- */}
+            <Text style={styles.roundText}>
+                Ronda {round} / {TOTAL_ROUNDS}
+            </Text>
 
+            {/* ---- Turno ---- */}
+            <Text style={styles.title}>Turno de {currentPlayer}</Text>
             <Text style={styles.subtitle}>Figuras por completar</Text>
 
-            {/* ---- GRID DE 6 FIGURAS ---- */}
+            {/* GRID DE FIGURAS */}
             <View style={styles.grid}>
-                {DADES.map((face) => (
-                    <TouchableOpacity
-                        key={face.id}
-                        style={styles.faceBox}
-                        onPress={() => handleFacePress(face)}
-                    >
-                        <Image source={face.img} style={styles.faceImg} resizeMode="contain" />
-                    </TouchableOpacity>
-                ))}
+                {DADES.map((face) => {
+                    const isSelected = selectedFace?.id === face.id;
+                    const isDisabled = disabledFaces[currentPlayer].includes(face.id);
+
+                    return (
+                        <TouchableOpacity
+                            key={face.id}
+                            style={[
+                                styles.faceBox,
+                                isSelected && styles.faceSelected,
+                                isDisabled && styles.faceDisabled,
+                            ]}
+                            onPress={() => !isDisabled && handleFacePress(face)}
+                            disabled={isDisabled}
+                        >
+                            <Image source={face.img} style={styles.faceImg} resizeMode="contain" />
+                        </TouchableOpacity>
+                    );
+                })}
+
             </View>
 
 
-            {/* ---- MODAL PARA SELECCIONAR LA CANTIDAD ---- */}
+            {/* ---- MODAL ---- */}
             <Modal transparent visible={modalVisible} animationType="fade">
                 <View style={styles.modalBackdrop}>
                     <View style={styles.modalContent}>
@@ -76,17 +129,38 @@ const ManualMode = () => {
                             ¿Cuántos dados de {selectedFace?.label} han salido?
                         </Text>
 
-                        <View style={styles.countRow}>
-                            {[1, 2, 3, 4, 5].map((num) => (
-                                <TouchableOpacity
-                                    key={num}
-                                    style={styles.countBtn}
-                                    onPress={() => handleSelectCount(num)}
-                                >
-                                    <Text style={styles.countText}>{num}</Text>
-                                </TouchableOpacity>
-                            ))}
+                        {/* NÚMEROS DEL 1 AL 10 */}
+                        <View style={styles.countGrid}>
+                            {[...Array(10)].map((_, i) => {
+                                const num = i + 1;
+                                const isSelected = num === selectedCount;
+
+                                return (
+                                    <TouchableOpacity
+                                        key={num}
+                                        style={[
+                                            styles.countBtn,
+                                            isSelected && styles.countSelected,
+                                        ]}
+                                        onPress={() => setSelectedCount(num)}
+                                    >
+                                        <Text style={styles.countText}>{num}</Text>
+                                    </TouchableOpacity>
+                                );
+                            })}
                         </View>
+
+                        {/* BOTÓN CONFIRMAR PUNTOS */}
+                        <TouchableOpacity
+                            style={[
+                                styles.modalConfirmBtn,
+                                !selectedCount && { opacity: 0.3 },
+                            ]}
+                            disabled={!selectedCount}
+                            onPress={handleConfirmCount}
+                        >
+                            <Text style={styles.modalConfirmText}>Confirmar</Text>
+                        </TouchableOpacity>
 
                         <TouchableOpacity
                             style={styles.cancelBtn}
@@ -94,6 +168,7 @@ const ManualMode = () => {
                         >
                             <Text style={styles.cancelText}>Cancelar</Text>
                         </TouchableOpacity>
+
                     </View>
                 </View>
             </Modal>
@@ -110,23 +185,34 @@ const styles = StyleSheet.create({
         paddingTop: 60,
         alignItems: "center",
     },
+
+    /* ---- Ronda ---- */
+    roundText: {
+        color: "#FACC15",
+        fontSize: 20,
+        fontWeight: "700",
+        marginBottom: 10,
+    },
+
     title: {
         color: "white",
         fontSize: 26,
         fontWeight: "700",
-        marginBottom: 20,
+        marginBottom: 10,
     },
     subtitle: {
         color: "#9CA3AF",
         fontSize: 18,
         marginBottom: 20,
     },
+
     grid: {
         width: "90%",
         flexDirection: "row",
         flexWrap: "wrap",
         justifyContent: "center",
     },
+
     faceBox: {
         width: "40%",
         height: 100,
@@ -135,12 +221,32 @@ const styles = StyleSheet.create({
         borderRadius: 12,
         justifyContent: "center",
         alignItems: "center",
+        borderWidth: 2,
+        borderColor: "transparent",
     },
-    faceText: {
-        color: "white",
-        fontSize: 20,
-        fontWeight: "600",
+    faceSelected: {
+        borderColor: "#FACC15",
     },
+
+    faceImg: {
+        width: "70%",
+        height: "70%",
+    },
+
+    confirmBtn: {
+        marginTop: 20,
+        backgroundColor: "#FACC15",
+        paddingVertical: 12,
+        paddingHorizontal: 30,
+        borderRadius: 10,
+    },
+    confirmText: {
+        fontSize: 18,
+        fontWeight: "700",
+        color: "#1F2937",
+    },
+
+    /* ---- Modal ---- */
     modalBackdrop: {
         flex: 1,
         backgroundColor: "rgba(0,0,0,0.5)",
@@ -158,38 +264,60 @@ const styles = StyleSheet.create({
         color: "white",
         fontSize: 20,
         fontWeight: "600",
+        marginBottom: 20,
         textAlign: "center",
-        marginBottom: 20,
     },
-    countRow: {
+
+    countGrid: {
+        width: "100%",
         flexDirection: "row",
+        flexWrap: "wrap",
+        justifyContent: "center",
         marginBottom: 20,
     },
+
     countBtn: {
-        width: 50,
-        height: 50,
+        width: 55,
+        height: 55,
         backgroundColor: "#374151",
-        borderRadius: 8,
+        borderRadius: 10,
         justifyContent: "center",
         alignItems: "center",
-        marginHorizontal: 6,
+        margin: 6,
+        borderWidth: 2,
+        borderColor: "transparent",
     },
+    countSelected: {
+        borderColor: "#FACC15",
+    },
+
     countText: {
         color: "white",
-        fontSize: 20,
+        fontSize: 18,
         fontWeight: "700",
     },
+
+    modalConfirmBtn: {
+        backgroundColor: "#FACC15",
+        paddingVertical: 10,
+        paddingHorizontal: 40,
+        borderRadius: 10,
+        marginBottom: 10,
+    },
+    modalConfirmText: {
+        fontSize: 18,
+        fontWeight: "700",
+        color: "#1F2937",
+    },
+
     cancelBtn: {
-        marginTop: 10,
+        marginTop: 5,
     },
     cancelText: {
         color: "#F87171",
         fontSize: 18,
     },
-    faceImg: {
-        width: "70%",
-        height: "70%",
-        borderRadius: 8,
+    faceDisabled: {
+        opacity: 0.4,
     },
-
 });
