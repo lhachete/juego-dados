@@ -1,9 +1,10 @@
-import { useState } from "react";
 import { View, Text, TextInput, StyleSheet, TouchableOpacity } from "react-native";
+import { router } from "expo-router";
+import { useGame } from "../contexts/GameContext";
 import Button from "../components/Button";
 
-const PlayerSelection = ({ navigation }) => {
-  const [players, setPlayers] = useState([""]);
+const PlayerSelection = () => {
+  const { players, setPlayers, mode, playType } = useGame();
 
   const handleAddPlayer = () => {
     setPlayers([...players, ""]);
@@ -22,7 +23,7 @@ const PlayerSelection = ({ navigation }) => {
   };
 
   const handleContinue = () => {
-    navigation.navigate("/game-mode");
+    router.push(`/${playType}-mode`);
   };
 
   return (

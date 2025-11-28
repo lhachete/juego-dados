@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { View, Text, StyleSheet } from "react-native";
 import Button from "../components/Button";
-import { useGame } from "./contexts/GameContext";
+import { useGame } from "../contexts/GameContext";
 import { router } from "expo-router";
 
 const GameMode = () => {
