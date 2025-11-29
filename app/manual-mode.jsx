@@ -57,7 +57,8 @@ const ManualMode = () => {
         if (!selectedCount) return;
 
         const prev = scores[currentPlayer] || 0;
-        const added = selectedCount;
+        // Calcular puntos a añadir según figura y cantidad.
+        const added = selectedFace.id * selectedCount;
 
         setScores({
             ...scores,
@@ -79,7 +80,7 @@ const ManualMode = () => {
         } else {
             setTurn((t) => t + 1);
         }
-
+        console.log('Puntos actualizados para', currentPlayer, ':', prev, '+', added, '=', prev + added);
         setSelectedFace(null);
         setSelectedCount(null);
     };
@@ -318,6 +319,6 @@ const styles = StyleSheet.create({
         fontSize: 18,
     },
     faceDisabled: {
-        opacity: 0.4,
+        opacity: 0.3,
     },
 });
