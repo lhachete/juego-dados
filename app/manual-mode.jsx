@@ -13,13 +13,21 @@ import { router } from "expo-router";
 
 
 const ManualMode = () => {
-    const { players, scores, setScores } = useGame();
-    const [turn, setTurn] = useState(0);
-    const [round, setRound] = useState(1);
+    const { players, scores, setScores, turn, setTurn, round, setRound,
+        secondPhaseOrder, setSecondPhaseOrder, secondPhaseStep, setSecondPhaseStep
+     } = useGame();
     const [selectedFace, setSelectedFace] = useState(null);
 
     const [modalVisible, setModalVisible] = useState(false);
     const [selectedCount, setSelectedCount] = useState(null);
+
+    
+  const [disabledFaces, setDisabledFaces] = useState(
+    players.reduce((acc, player) => {
+      acc[player] = []; // cada jugador empieza sin figuras bloqueadas
+      return acc;
+    }, {})
+  );
 
     //reiniciar turno y ronda al entrar de nuevo
     const resetGame = () => {
@@ -27,28 +35,7 @@ const ManualMode = () => {
         setRound(1);
     }
 
-    //caras deshabilitadas
-    /* 
-    {
-    "Jugador 1": [2, 5],
-    "Jugador 2": [1],
-    "Jugador 3": []
-    }
-    */
-    const [disabledFaces, setDisabledFaces] = useState(
-        players.reduce((acc, player) => {
-            acc[player] = []; // cada jugador empieza sin figuras bloqueadas
-            return acc;
-        }, {})
-    );
-
-    const [secondPhaseChoice, setSecondPhaseChoice] = useState(null);
     const [phaseModalVisible, setPhaseModalVisible] = useState(false);
-    // Para registrar el orden de selección en la segunda fase
-    const [secondPhaseOrder, setSecondPhaseOrder] = useState([]);
-    // índice actual de la figura en segunda tanda
-    const [secondPhaseStep, setSecondPhaseStep] = useState(0);
-
 
     const currentPlayer = players[turn];
 
@@ -145,7 +132,7 @@ const ManualMode = () => {
     };
 
     const handleSecondPhaseSelect = (type) => {
-        setSecondPhaseChoice(type);
+        
 
         // Determinar orden según elección
         let order = [];
@@ -288,18 +275,18 @@ const ManualMode = () => {
 
                         {/* Botón negras */}
                         <TouchableOpacity
-                            style={[styles.modalConfirmBtn, { marginBottom: 10 }]}
+                            style={[styles.modalNegras, { marginBottom: 10 }]}
                             onPress={() => handleSecondPhaseSelect("negras")}
                         >
-                            <Text style={styles.modalConfirmText}>Empezando por Negras</Text>
+                            <Text style={styles.modalWhiteText}>Empezando por Negras</Text>
                         </TouchableOpacity>
 
                         {/* Botón ás */}
                         <TouchableOpacity
-                            style={styles.modalConfirmBtn}
+                            style={styles.modalAses}
                             onPress={() => handleSecondPhaseSelect("as")}
                         >
-                            <Text style={styles.modalConfirmText}>Empezando por Ás</Text>
+                            <Text style={styles.modalWhiteText}>Empezando por Áses</Text>
                         </TouchableOpacity>
                     </View>
                 </View>
@@ -444,7 +431,25 @@ const styles = StyleSheet.create({
         fontWeight: "700",
         color: "#1F2937",
     },
-
+    modalWhiteText: {
+        fontSize: 18,
+        fontWeight: "700",
+        color: "#FFFFFF",
+    },
+    modalNegras: {
+        backgroundColor: "#020202",
+        paddingVertical: 10,
+        paddingHorizontal: 40,
+        borderRadius: 10,
+        marginBottom: 10,
+    },
+    modalAses: {
+        backgroundColor: "#FA0824",
+        paddingVertical: 10,
+        paddingHorizontal: 47,
+        borderRadius: 10,
+        marginBottom: 10,
+    },
     cancelBtn: {
         marginTop: 5,
     },

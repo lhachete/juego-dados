@@ -1,9 +1,10 @@
 import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
+import Button from "../components/Button";
 import { router } from "expo-router";
 import { useGame } from "../contexts/GameContext";
 
 const EndGame = () => {
-  const { players, scores } = useGame();
+  const { players, scores, resetRoundState, resetWholeGame, playType } = useGame();
 
   // Convertimos los datos a una lista ordenada
   const ranking = players
@@ -34,12 +35,26 @@ const EndGame = () => {
         ))}
       </View>
 
-      <TouchableOpacity
-        style={styles.button}
-        onPress={() => router.replace("/")}
-      >
-        <Text style={styles.buttonText}>Volver al inicio</Text>
-      </TouchableOpacity>
+      <Button
+        title="Jugar otra vez"
+        onPress={() => {
+        resetRoundState();
+        router.push(`/${playType}-mode`);
+        }}
+      />
+        
+      
+
+      <Button
+      title="Volver al inicio"
+      onPress={() => {
+        resetWholeGame();
+        router.push(`/`);
+        }}
+        variant="outline"
+      />
+
+
     </View>
   );
 };
