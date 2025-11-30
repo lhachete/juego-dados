@@ -35,21 +35,22 @@ const ManualMode = () => {
     );
 
     const [secondPhaseChoice, setSecondPhaseChoice] = useState(null);
-const [phaseModalVisible, setPhaseModalVisible] = useState(false);
-// Para registrar el orden de selección en la segunda fase
-const [secondPhaseOrder, setSecondPhaseOrder] = useState([]);
-
+    const [phaseModalVisible, setPhaseModalVisible] = useState(false);
+    // Para registrar el orden de selección en la segunda fase
+    const [secondPhaseOrder, setSecondPhaseOrder] = useState([]);
+    // índice actual de la figura en segunda tanda
+    const [secondPhaseStep, setSecondPhaseStep] = useState(0);
 
 
     const currentPlayer = players[turn];
 
-    const TOTAL_ROUNDS = 13; // por ejemplo
+    const TOTAL_ROUNDS = 12;
 
     // Al pulsar una figura → solo se selecciona (NO abre modal)
     const handleFacePress = (face) => {
-    setSelectedFace(face);
-    setModalVisible(true);
-};
+        setSelectedFace(face);
+        setModalVisible(true);
+    };
 
 
     const openModal = () => {
@@ -76,40 +77,60 @@ const [secondPhaseOrder, setSecondPhaseOrder] = useState([]);
             [currentPlayer]: [...disabledFaces[currentPlayer], selectedFace.id]
         });
 
-        // --- Si estamos en segunda tanda, actualizar figuras habilitadas por orden ---
-if (round >= 7 && secondPhaseOrder.length) {
-    // Encontrar el índice de la figura recién seleccionada
-    const index = secondPhaseOrder.indexOf(selectedFace.id);
-    // Próxima figura a habilitar (siguiente en el orden)
-    const nextFaceId = secondPhaseOrder[index + 1];
-
-    if (nextFaceId) {
-        // Rehabilitar solo la siguiente figura para todos
-        const updated = {};
-        players.forEach(p => {
-            updated[p] = DADES.map(f => f.id).filter(id => id !== nextFaceId);
-        });
-        setDisabledFaces(updated);
-    }
-}
-
-
         setModalVisible(false);
 
         // Cambiar turno
         if (turn === players.length - 1) {
-    const nextRound = round + 1;
-    setTurn(0);
-    setRound(nextRound);
 
-    // Abrir modal especial al llegar a ronda 7
-    if (nextRound === 7) {
-        setPhaseModalVisible(true);
-    }
+            if (round === TOTAL_ROUNDS) {
+                // Terminar el juego y pasar a pantalla final
+                // aquí luego enlazaremos el componente final
+                console.log("🏁 Fin del juego!");
+                return;
+            } else {
+                // Avanzar ronda
+                const nextRound = round + 1;
+                setRound(nextRound);
+            }
 
-} else {
-    setTurn((t) => t + 1);
-}
+
+            // --- SI ESTAMOS EN SEGUNDA TANDA ---
+            if (round >= 7) {
+
+                const nextStep = secondPhaseStep + 1;
+
+                // Si quedan figuras por completar
+                if (nextStep < secondPhaseOrder.length) {
+
+                    setSecondPhaseStep(nextStep);
+                    const nextFaceId = secondPhaseOrder[nextStep];
+
+                    // habilitar SOLO ESTA figura para todos
+                    const updated = {};
+                    players.forEach(p => {
+                        updated[p] = DADES.map(f => f.id).filter(id => id !== nextFaceId);
+                    });
+                    setDisabledFaces(updated);
+
+                }
+
+            } else {
+                // --- PRIMERA TANDA NORMAL ---
+                const nextRound = round + 1;
+                setRound(nextRound);
+
+                if (nextRound === 7) {
+                    setPhaseModalVisible(true);
+                }
+            }
+
+            setTurn(0);
+
+        } else {
+            // siguiente jugador normal
+            setTurn(turn + 1);
+        }
+
 
         console.log('Puntos actualizados para', currentPlayer, ':', prev, '+', added, '=', prev + added);
         setSelectedFace(null);
@@ -117,29 +138,31 @@ if (round >= 7 && secondPhaseOrder.length) {
     };
 
     const handleSecondPhaseSelect = (type) => {
-    setSecondPhaseChoice(type);
+        setSecondPhaseChoice(type);
 
-    // Determinar orden según elección
-    let order = [];
-    if (type === "negras") {
-        // ascendente del 1 al 6
-        order = DADES.map(f => f.id).sort((a, b) => a - b);
-    } else {
-        // descendente del 6 al 1
-        order = DADES.map(f => f.id).sort((a, b) => b - a);
-    }
-    setSecondPhaseOrder(order);
+        // Determinar orden según elección
+        let order = [];
+        if (type === "negras") {
+            // ascendente del 1 al 6
+            order = DADES.map(f => f.id).sort((a, b) => a - b);
+        } else {
+            // descendente del 6 al 1
+            order = DADES.map(f => f.id).sort((a, b) => b - a);
+        }
+        setSecondPhaseOrder(order);
+        setSecondPhaseStep(0); // Comenzar por la primera del orden
 
-    // Reiniciar disabledFaces dejando todas figuras bloqueadas excepto la primera de la orden
-    const firstId = order[0];
-    const updated = {};
-    players.forEach(p => {
-        updated[p] = DADES.map(f => f.id).filter(id => id !== firstId);
-    });
-    setDisabledFaces(updated);
 
-    setPhaseModalVisible(false);
-};
+        // Reiniciar disabledFaces dejando todas figuras bloqueadas excepto la primera de la orden
+        const firstId = order[0];
+        const updated = {};
+        players.forEach(p => {
+            updated[p] = DADES.map(f => f.id).filter(id => id !== firstId);
+        });
+        setDisabledFaces(updated);
+
+        setPhaseModalVisible(false);
+    };
 
 
 
@@ -233,51 +256,51 @@ if (round >= 7 && secondPhaseOrder.length) {
             </Modal>
 
             {/* --- MODAL ESPECIAL SEGUNDA FASE (RONDA 7) --- */}
-<Modal transparent visible={phaseModalVisible} animationType="fade">
-    <View style={styles.modalBackdrop}>
-        <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Puntuaciones actuales</Text>
+            <Modal transparent visible={phaseModalVisible} animationType="fade">
+                <View style={styles.modalBackdrop}>
+                    <View style={styles.modalContent}>
+                        <Text style={styles.modalTitle}>Puntuaciones actuales</Text>
 
-            {players.map((p) => (
-                <Text key={p} style={{ color: "white", fontSize: 18, marginBottom: 6 }}>
-                    {p}: {scores[p] || 0} pts
-                </Text>
-            ))}
+                        {players.map((p) => (
+                            <Text key={p} style={{ color: "white", fontSize: 18, marginBottom: 6 }}>
+                                {p}: {scores[p] || 0} pts
+                            </Text>
+                        ))}
 
-            <Text
-                style={{
-                    color: "#FACC15",
-                    fontSize: 20,
-                    fontWeight: "700",
-                    marginVertical: 20,
-                    textAlign: "center",
-                }}
-            >
-                ¿Cómo vais a empezar la segunda tanda?
-            </Text>
+                        <Text
+                            style={{
+                                color: "#FACC15",
+                                fontSize: 20,
+                                fontWeight: "700",
+                                marginVertical: 20,
+                                textAlign: "center",
+                            }}
+                        >
+                            ¿Cómo vais a empezar la segunda tanda?
+                        </Text>
 
-            {/* Botón negras */}
-            <TouchableOpacity
-                style={[styles.modalConfirmBtn, { marginBottom: 10 }]}
-                onPress={() => handleSecondPhaseSelect("negras")}
-            >
-                <Text style={styles.modalConfirmText}>Empezando por Negras</Text>
-            </TouchableOpacity>
+                        {/* Botón negras */}
+                        <TouchableOpacity
+                            style={[styles.modalConfirmBtn, { marginBottom: 10 }]}
+                            onPress={() => handleSecondPhaseSelect("negras")}
+                        >
+                            <Text style={styles.modalConfirmText}>Empezando por Negras</Text>
+                        </TouchableOpacity>
 
-            {/* Botón ás */}
-            <TouchableOpacity
-                style={styles.modalConfirmBtn}
-                onPress={() => handleSecondPhaseSelect("as")}
-            >
-                <Text style={styles.modalConfirmText}>Empezando por Ás</Text>
-            </TouchableOpacity>
+                        {/* Botón ás */}
+                        <TouchableOpacity
+                            style={styles.modalConfirmBtn}
+                            onPress={() => handleSecondPhaseSelect("as")}
+                        >
+                            <Text style={styles.modalConfirmText}>Empezando por Ás</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </Modal>
+
         </View>
-    </View>
-</Modal>
 
-        </View>
 
-        
     );
 };
 
