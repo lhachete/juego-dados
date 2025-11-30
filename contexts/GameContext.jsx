@@ -8,6 +8,17 @@ export const GameProvider = ({ children }) => {
   const [players, setPlayers] = useState(["",""]);     // lista jugadores
   const [scores, setScores] = useState({});       // { nombre: puntos }
 
+  const resetGame = () => {
+    setScores({});
+    setPlayers([]);
+    setDisabledFaces({});
+    setTurn(0);
+    setRound(1);
+    setSecondPhase(false);
+    setSecondPhaseStep(0);
+};
+
+
   return (
     <GameContext.Provider
       value={{

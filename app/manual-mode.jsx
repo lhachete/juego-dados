@@ -9,6 +9,7 @@ import {
     Image,
 } from "react-native";
 import { useGame } from "../contexts/GameContext";
+import { router } from "expo-router";
 
 
 const ManualMode = () => {
@@ -19,6 +20,13 @@ const ManualMode = () => {
 
     const [modalVisible, setModalVisible] = useState(false);
     const [selectedCount, setSelectedCount] = useState(null);
+
+    //reiniciar turno y ronda al entrar de nuevo
+    const resetGame = () => {
+        setTurn(0);
+        setRound(1);
+    }
+
     //caras deshabilitadas
     /* 
     {
@@ -83,9 +91,8 @@ const ManualMode = () => {
         if (turn === players.length - 1) {
 
             if (round === TOTAL_ROUNDS) {
-                // Terminar el juego y pasar a pantalla final
-                // aquí luego enlazaremos el componente final
-                console.log("🏁 Fin del juego!");
+                resetGame();
+                router.replace("/end-game");
                 return;
             } else {
                 // Avanzar ronda
