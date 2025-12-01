@@ -27,29 +27,30 @@ const EndGame = () => {
       )}
 
       <View style={styles.listContainer}>
-        {ranking.map((p) => (
-          <View key={p.name} style={styles.row}>
+        {ranking.map((p, index) => (
+          <View key={`${p.name}-${index}`} style={styles.row}>
             <Text style={styles.player}>{p.name}</Text>
             <Text style={styles.score}>{p.points} pts</Text>
           </View>
         ))}
+
       </View>
 
       <Button
         title="Jugar otra vez"
         onPress={() => {
-        resetRoundState();
-        router.push(`/${playType}-mode`);
+          resetRoundState();
+          router.push(`/${playType}-mode`);
         }}
       />
-        
-      
+
+
 
       <Button
-      title="Volver al inicio"
-      onPress={() => {
-        resetWholeGame();
-        router.push(`/`);
+        title="Volver al inicio"
+        onPress={() => {
+          resetWholeGame();
+          router.push(`/`);
         }}
         variant="outline"
       />
