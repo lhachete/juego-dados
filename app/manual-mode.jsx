@@ -1,4 +1,5 @@
 import { useState } from "react";
+import ScoresModal from "../components/ScoresModal";
 import DADES from "./dades.jsx";
 import {
     View,
@@ -14,7 +15,7 @@ import { router } from "expo-router";
 
 const ManualMode = () => {
     const { players, scores, setScores, turn, setTurn, round, setRound,
-        secondPhaseOrder, setSecondPhaseOrder, secondPhaseStep, setSecondPhaseStep
+        secondPhaseOrder, setSecondPhaseOrder, secondPhaseStep, setSecondPhaseStep, scoresModalVisible, setScoresModalVisible,
     } = useGame();
     const [selectedFace, setSelectedFace] = useState(null);
 
@@ -191,9 +192,15 @@ const ManualMode = () => {
                         </TouchableOpacity>
                     );
                 })}
-
-
             </View>
+
+            <TouchableOpacity
+                style={styles.viewScoresBtn}
+                onPress={() => setScoresModalVisible(true)}
+            >
+                <Text style={styles.viewScoresText}>Ver puntuaciones</Text>
+            </TouchableOpacity>
+
 
 
             {/* ---- MODAL ---- */}
@@ -237,15 +244,17 @@ const ManualMode = () => {
                         >
                             <Text style={styles.modalConfirmText}>Confirmar</Text>
                         </TouchableOpacity>
-
                         <TouchableOpacity
                             style={styles.cancelBtn}
                             onPress={() => setModalVisible(false)}
                         >
                             <Text style={styles.cancelText}>Cancelar</Text>
                         </TouchableOpacity>
-
                     </View>
+
+
+
+
                 </View>
             </Modal>
 
@@ -292,6 +301,16 @@ const ManualMode = () => {
                 </View>
             </Modal>
 
+            {/* ---- MODAL PUNTUACIONES TOTALES ---- */}
+            <ScoresModal
+                visible={scoresModalVisible}
+                players={players}
+                scores={scores}
+                onClose={() => setScoresModalVisible(false)}
+            />
+
+
+
         </View>
 
 
@@ -337,7 +356,7 @@ const styles = StyleSheet.create({
 
     faceBox: {
         width: "40%",
-        height: 130,
+        height: 120,
         backgroundColor: "#1F2937",
         margin: "5%",
         borderRadius: 12,
@@ -352,8 +371,8 @@ const styles = StyleSheet.create({
     },
 
     faceImg: {
-        width: "70%",
-        height: "70%",
+        width: "65%",
+        height: "65%",
     },
 
     confirmBtn: {
@@ -379,7 +398,7 @@ const styles = StyleSheet.create({
     modalContent: {
         width: "85%",
         backgroundColor: "#1F2937",
-        padding: 20,
+        padding: 30,
         borderRadius: 12,
         alignItems: "center",
     },
@@ -467,4 +486,17 @@ const styles = StyleSheet.create({
         fontWeight: "700",
         marginBottom: 10,
     },
+    viewScoresBtn: {
+        marginTop: 20,
+
+        paddingVertical: 10,
+        paddingHorizontal: 30,
+        borderRadius: 10,
+    },
+    viewScoresText: {
+        color: "#FACC15",
+        fontSize: 18,
+        fontWeight: "600",
+    },
+
 });

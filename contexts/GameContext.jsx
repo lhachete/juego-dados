@@ -7,6 +7,7 @@ export const GameProvider = ({ children }) => {
   const [playType, setPlayType] = useState(null); // manual | virtual
   const [players, setPlayers] = useState(["", ""]);     // lista jugadores
   const [scores, setScores] = useState({});       // { nombre: puntos }
+  const [scoresModalVisible, setScoresModalVisible] = useState(false);
 
   const [turn, setTurn] = useState(0);
   const [round, setRound] = useState(1);
@@ -48,6 +49,8 @@ export const GameProvider = ({ children }) => {
         setPlayers,
         scores,
         setScores,
+        scoresModalVisible,
+        setScoresModalVisible,
 
         turn, setTurn,
         round, setRound,
