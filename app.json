@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "juego-dados",
+    "name": "Royal dices",
     "slug": "juego-dados",
     "version": "1.0.0",
     "scheme": "royaldices",
@@ -30,7 +30,7 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
+        "foregroundImage": "./assets/icon.png",
         "backgroundColor": "#ffffff"
       },
       "package": "com.hachete.juegodados"

@@ -25,11 +25,11 @@ const GameMode = () => {
         variant={selectedMode === "classic" ? "filled" : "outline"}
       />
 
-      {/* Botón Modo Craziest */}
+      {/* Botón Modo Crazy */}
       <Button
-        title="Modo Craziest"
-        onPress={() => handleSelectMode("craziest")}
-        variant={selectedMode === "craziest" ? "filled" : "outline"}
+        title="Modo Crazy"
+        onPress={() => handleSelectMode("crazy")}
+        variant={selectedMode === "crazy" ? "filled" : "outline"}
       />
 
       {/* Opciones del modo Clásico */}
@@ -53,6 +53,7 @@ const GameMode = () => {
               setPlayType("virtual");
               // más adelante implementamos su pantalla
             }}
+            
           />
         </View>
       )}

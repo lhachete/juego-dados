@@ -15,19 +15,19 @@ import { router } from "expo-router";
 const ManualMode = () => {
     const { players, scores, setScores, turn, setTurn, round, setRound,
         secondPhaseOrder, setSecondPhaseOrder, secondPhaseStep, setSecondPhaseStep
-     } = useGame();
+    } = useGame();
     const [selectedFace, setSelectedFace] = useState(null);
 
     const [modalVisible, setModalVisible] = useState(false);
     const [selectedCount, setSelectedCount] = useState(null);
 
-    
-  const [disabledFaces, setDisabledFaces] = useState(
-    players.reduce((acc, player) => {
-      acc[player] = []; // cada jugador empieza sin figuras bloqueadas
-      return acc;
-    }, {})
-  );
+
+    const [disabledFaces, setDisabledFaces] = useState(
+        players.reduce((acc, player) => {
+            acc[player] = []; // cada jugador empieza sin figuras bloqueadas
+            return acc;
+        }, {})
+    );
 
     //reiniciar turno y ronda al entrar de nuevo
     const resetGame = () => {
@@ -48,14 +48,8 @@ const ManualMode = () => {
     };
 
 
-    const openModal = () => {
-        if (!selectedFace) return;
-        setSelectedCount(null);
-        setModalVisible(true);
-    };
-
     const handleConfirmCount = () => {
-        if (!selectedCount) return;
+        if (selectedCount === null) return;
 
         const prev = scores[currentPlayer] || 0;
         // Calcular puntos a añadir según figura y cantidad.
@@ -126,13 +120,13 @@ const ManualMode = () => {
         }
 
 
-        console.log('Puntos actualizados para', currentPlayer, ':', prev, '+', added, '=', prev + added);
+        console.log('Puntos actualizados para', currentPlayer, ':', prev, '+', added, '=', prev + added); //! QUITAR ANTES DE SUBIR
         setSelectedFace(null);
         setSelectedCount(null);
     };
 
     const handleSecondPhaseSelect = (type) => {
-        
+
 
         // Determinar orden según elección
         let order = [];
@@ -170,6 +164,10 @@ const ManualMode = () => {
 
             {/* ---- Turno ---- */}
             <Text style={styles.title}>Turno de {currentPlayer}</Text>
+            {/* ---- Puntos del jugador ---- */}
+            <Text style={styles.currentPlayerScore}>
+                Puntos: {currentPlayer in scores ? scores[currentPlayer] : 0}
+            </Text>
             <Text style={styles.subtitle}>Figuras por completar</Text>
 
             {/* GRID DE FIGURAS */}
@@ -194,6 +192,7 @@ const ManualMode = () => {
                     );
                 })}
 
+
             </View>
 
 
@@ -205,10 +204,10 @@ const ManualMode = () => {
                             ¿Cuántos dados de {selectedFace?.label} han salido?
                         </Text>
 
-                        {/* NÚMEROS DEL 1 AL 10 */}
+                        {/* NÚMEROS DEL 0 AL 10 */}
                         <View style={styles.countGrid}>
-                            {[...Array(10)].map((_, i) => {
-                                const num = i + 1;
+                            {[...Array(11)].map((_, i) => {
+                                const num = i;
                                 const isSelected = num === selectedCount;
 
                                 return (
@@ -230,9 +229,10 @@ const ManualMode = () => {
                         <TouchableOpacity
                             style={[
                                 styles.modalConfirmBtn,
-                                !selectedCount && { opacity: 0.3 },
+                                selectedCount === null && { opacity: 0.3 },
                             ]}
-                            disabled={!selectedCount}
+                            disabled={selectedCount === null}
+
                             onPress={handleConfirmCount}
                         >
                             <Text style={styles.modalConfirmText}>Confirmar</Text>
@@ -337,7 +337,7 @@ const styles = StyleSheet.create({
 
     faceBox: {
         width: "40%",
-        height: 100,
+        height: 130,
         backgroundColor: "#1F2937",
         margin: "5%",
         borderRadius: 12,
@@ -345,6 +345,7 @@ const styles = StyleSheet.create({
         alignItems: "center",
         borderWidth: 2,
         borderColor: "transparent",
+
     },
     faceSelected: {
         borderColor: "#FACC15",
@@ -395,12 +396,12 @@ const styles = StyleSheet.create({
         flexDirection: "row",
         flexWrap: "wrap",
         justifyContent: "center",
-        marginBottom: 20,
+        marginBottom: 30,
     },
 
     countBtn: {
-        width: 55,
-        height: 55,
+        width: 80,
+        height: 80,
         backgroundColor: "#374151",
         borderRadius: 10,
         justifyContent: "center",
@@ -421,10 +422,10 @@ const styles = StyleSheet.create({
 
     modalConfirmBtn: {
         backgroundColor: "#FACC15",
-        paddingVertical: 10,
+        paddingVertical: 20,
         paddingHorizontal: 40,
         borderRadius: 10,
-        marginBottom: 10,
+        marginBottom: 30,
     },
     modalConfirmText: {
         fontSize: 18,
@@ -459,5 +460,11 @@ const styles = StyleSheet.create({
     },
     faceDisabled: {
         opacity: 0.3,
+    },
+    currentPlayerScore: {
+        color: "white",
+        fontSize: 18,
+        fontWeight: "700",
+        marginBottom: 10,
     },
 });
