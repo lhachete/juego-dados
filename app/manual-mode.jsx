@@ -1,5 +1,7 @@
-import { useState } from "react";
+import { BackHandler } from "react-native";
+import { useState, useEffect, useCallback } from "react";
 import ScoresModal from "../components/ScoresModal";
+import ExitGameModal from "../components/ExitGameModal";
 import DADES from "./dades.jsx";
 import {
     View,
@@ -11,16 +13,22 @@ import {
 } from "react-native";
 import { useGame } from "../contexts/GameContext";
 import { router } from "expo-router";
+import { useNavigation } from "@react-navigation/native";
+
 
 
 const ManualMode = () => {
     const { players, scores, setScores, turn, setTurn, round, setRound,
-        secondPhaseOrder, setSecondPhaseOrder, secondPhaseStep, setSecondPhaseStep, scoresModalVisible, setScoresModalVisible,
+        secondPhaseOrder, setSecondPhaseOrder, secondPhaseStep, setSecondPhaseStep,
+        scoresModalVisible, setScoresModalVisible, exitGame, finishGame, isGameStarted,
+        startGame
     } = useGame();
     const [selectedFace, setSelectedFace] = useState(null);
-
     const [modalVisible, setModalVisible] = useState(false);
+    const [exitModalVisible, setExitModalVisible] = useState(false);
     const [selectedCount, setSelectedCount] = useState(null);
+    const [phaseModalVisible, setPhaseModalVisible] = useState(false);
+    const navigation = useNavigation();
 
 
     const [disabledFaces, setDisabledFaces] = useState(
@@ -36,10 +44,8 @@ const ManualMode = () => {
         setRound(1);
     }
 
-    const [phaseModalVisible, setPhaseModalVisible] = useState(false);
 
     const currentPlayer = players[turn];
-
     const TOTAL_ROUNDS = 12;
 
     // Al pulsar una figura → solo se selecciona (NO abre modal)
@@ -82,32 +88,26 @@ const ManualMode = () => {
                 setRound(nextRound);
             }
 
-
             // --- SI ESTAMOS EN SEGUNDA TANDA ---
             if (round >= 7) {
-
                 const nextStep = secondPhaseStep + 1;
 
                 // Si quedan figuras por completar
                 if (nextStep < secondPhaseOrder.length) {
-
                     setSecondPhaseStep(nextStep);
                     const nextFaceId = secondPhaseOrder[nextStep];
-
                     // habilitar SOLO ESTA figura para todos
                     const updated = {};
                     players.forEach(p => {
                         updated[p] = DADES.map(f => f.id).filter(id => id !== nextFaceId);
                     });
                     setDisabledFaces(updated);
-
                 }
 
             } else {
                 // --- PRIMERA TANDA NORMAL ---
                 const nextRound = round + 1;
                 setRound(nextRound);
-
                 if (nextRound === 7) {
                     setPhaseModalVisible(true);
                 }
@@ -120,15 +120,11 @@ const ManualMode = () => {
             setTurn(turn + 1);
         }
 
-
-        console.log('Puntos actualizados para', currentPlayer, ':', prev, '+', added, '=', prev + added); //! QUITAR ANTES DE SUBIR
         setSelectedFace(null);
         setSelectedCount(null);
     };
 
     const handleSecondPhaseSelect = (type) => {
-
-
         // Determinar orden según elección
         let order = [];
         if (type === "negras") {
@@ -153,6 +149,25 @@ const ManualMode = () => {
         setPhaseModalVisible(false);
     };
 
+    // Iniciar el juego al montar el componente
+    useEffect(() => {
+        if (!isGameStarted) {
+            startGame();
+        }
+    }, []);
+
+    // Manejo del botón de retroceso (back) en Android
+    useEffect(() => {
+        const unsubscribe = navigation.addListener("beforeRemove", (e) => {
+            if (!isGameStarted) return;
+
+            e.preventDefault(); // ⛔ bloquea back
+            setExitModalVisible(true);
+        });
+
+        return unsubscribe;
+    }, [navigation, isGameStarted]);
+
 
 
 
@@ -175,7 +190,7 @@ const ManualMode = () => {
             <View style={styles.grid}>
                 {DADES.map((face) => {
                     const isSelected = selectedFace?.id === face.id;
-                    const isDisabled = disabledFaces[currentPlayer].includes(face.id);
+                    const isDisabled = disabledFaces[currentPlayer]?.includes(face.id) ?? false;
 
                     return (
                         <TouchableOpacity
@@ -307,6 +322,28 @@ const ManualMode = () => {
                 players={players}
                 scores={scores}
                 onClose={() => setScoresModalVisible(false)}
+            />
+            {/* ---- MODAL SALIR DE PARTIDA ---- */}
+            <ExitGameModal
+                visible={exitModalVisible}
+                onCancel={() => setExitModalVisible(false)}
+                onExit={() => {
+                    setExitModalVisible(false);
+                    // Resetear estado del juego
+                    setDisabledFaces(
+                        players.reduce((acc, p) => {
+                            acc[p] = [];
+                            return acc;
+                        }, {})
+                    );
+                    exitGame();
+                    router.replace("/player-selection");
+                }}
+                onFinish={() => {
+                    setExitModalVisible(false);
+                    finishGame();
+                    router.replace("/end-game");
+                }}
             />
 
 

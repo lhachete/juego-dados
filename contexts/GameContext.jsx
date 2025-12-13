@@ -8,15 +8,20 @@ export const GameProvider = ({ children }) => {
   const [players, setPlayers] = useState(["", ""]);     // lista jugadores
   const [scores, setScores] = useState({});       // { nombre: puntos }
   const [scoresModalVisible, setScoresModalVisible] = useState(false);
-
   const [turn, setTurn] = useState(0);
   const [round, setRound] = useState(1);
-
-
   // Para registrar el orden de selección en la segunda fase
   const [secondPhaseOrder, setSecondPhaseOrder] = useState([]);
   // índice actual de la figura en segunda tanda
   const [secondPhaseStep, setSecondPhaseStep] = useState(0);
+  const [isGameStarted, setIsGameStarted] = useState(false);
+
+  const startGame = () => {
+    const initialScores = {};
+    players.forEach(p => initialScores[p] = 0);
+    setScores(initialScores);
+    setIsGameStarted(true);
+  };
 
   const resetRoundState = () => {
     setTurn(0);
@@ -37,6 +42,15 @@ export const GameProvider = ({ children }) => {
     setSecondPhaseStep(0);
   };
 
+const exitGame = () => {
+    resetRoundState();
+    setPlayers(["", ""]);
+    setIsGameStarted(false);
+  };
+
+  const finishGame = () => {
+    setIsGameStarted(false);
+  };
 
   return (
     <GameContext.Provider
@@ -58,6 +72,12 @@ export const GameProvider = ({ children }) => {
         secondPhaseStep, setSecondPhaseStep,
         resetRoundState,
         resetWholeGame,
+
+        isGameStarted,
+        startGame,
+        resetRoundState,
+        exitGame,
+        finishGame
 
       }}
     >
