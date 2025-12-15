@@ -40,7 +40,7 @@ const EndGame = () => {
         title="Jugar otra vez"
         onPress={() => {
           resetRoundState();
-          router.push(`/${playType}-mode`);
+          router.replace(`/${playType}-mode`);
         }}
       />
 
@@ -50,7 +50,7 @@ const EndGame = () => {
         title="Volver al inicio"
         onPress={() => {
           resetWholeGame();
-          router.push(`/`);
+          router.replace(`/`);
         }}
         variant="outline"
       />

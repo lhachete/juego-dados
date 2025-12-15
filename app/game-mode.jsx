@@ -6,6 +6,7 @@ import { useGame } from "../contexts/GameContext";
 import { router } from "expo-router";
 
 const GameMode = () => {
+
   const { setMode, setPlayType } = useGame();
   const [selectedMode, setSelectedMode] = useState(null);
 
@@ -51,7 +52,8 @@ const GameMode = () => {
             variant="outline"
             onPress={() => {
               setPlayType("virtual");
-              // más adelante implementamos su pantalla
+              // más adelante implementamos su pantalla -->
+              // router.push("/player-selection");
             }}
             
           />

@@ -1,5 +1,4 @@
-import { BackHandler } from "react-native";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import ScoresModal from "../components/ScoresModal";
 import ExitGameModal from "../components/ExitGameModal";
 import DADES from "./dades.jsx";
@@ -14,8 +13,6 @@ import {
 import { useGame } from "../contexts/GameContext";
 import { router } from "expo-router";
 import { useNavigation } from "@react-navigation/native";
-
-
 
 const ManualMode = () => {
     const { players, scores, setScores, turn, setTurn, round, setRound,
@@ -80,6 +77,7 @@ const ManualMode = () => {
 
             if (round === TOTAL_ROUNDS) {
                 resetGame();
+                finishGame();
                 router.replace("/end-game");
                 return;
             } else {
@@ -156,18 +154,16 @@ const ManualMode = () => {
         }
     }, []);
 
-    // Manejo del botón de retroceso (back) en Android
+    // Bloquear botón atrás si la partida ha comenzado (no uso el hook porque aquí ya se maneja con un modal)
     useEffect(() => {
         const unsubscribe = navigation.addListener("beforeRemove", (e) => {
             if (!isGameStarted) return;
-
-            e.preventDefault(); // ⛔ bloquea back
+            e.preventDefault();
             setExitModalVisible(true);
         });
 
         return unsubscribe;
     }, [navigation, isGameStarted]);
-
 
 
 
@@ -299,7 +295,7 @@ const ManualMode = () => {
 
                         {/* Botón negras */}
                         <TouchableOpacity
-                            style={[styles.modalNegras, { marginBottom: 10 }]}
+                            style={[styles.modalNegras, { marginBottom: 20 }]}
                             onPress={() => handleSecondPhaseSelect("negras")}
                         >
                             <Text style={styles.modalWhiteText}>Empezando por Negras</Text>
