@@ -1,26 +1,25 @@
-import { useEffect } from "react";
-import { useNavigation } from "@react-navigation/native";
-import { router } from "expo-router";
+import { BackHandler } from "react-native";
+import { useFocusEffect } from "expo-router";
+import { useCallback } from "react";
 
-export const useBlockBack = (enabled, fallback) => {
-    const navigation = useNavigation();
+export function useBlockBack(enabled = true, onBack) {
+    useFocusEffect(
+        useCallback(() => {
+            if (!enabled) return;
 
-    useEffect(() => {
-        if (!enabled) return;
+            const onBackPress = () => {
+                if (onBack) {
+                    onBack();
+                }
+                return true; // ⛔ bloquea el back del sistema
+            };
 
-        const unsubscribe = navigation.addListener("beforeRemove", (e) => {
-            // 🔹 SOLO bloquear el BACK físico / gesto
-            if (e.data.action.type !== "POP") {
-                return;
-            }
+            const sub = BackHandler.addEventListener(
+                "hardwareBackPress",
+                onBackPress
+            );
 
-            e.preventDefault();
-
-            if (fallback) {
-                router.replace(fallback);
-            }
-        });
-
-        return unsubscribe;
-    }, [navigation, enabled, fallback]);
-};
+            return () => sub.remove();
+        }, [enabled, onBack])
+    );
+}

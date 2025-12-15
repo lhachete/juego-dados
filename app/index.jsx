@@ -1,13 +1,13 @@
 import { View, Image, StyleSheet } from "react-native";
-import { Link } from "expo-router";
+import { Link, router } from "expo-router";
 import Button from "../components/Button";
 import Title from "../components/Title";
 import logo from "../assets/logo.png";
 import TextButton from "../components/TextButton";
-import { useBlockBack } from "../hooks/useBlockBack";
+
 
 const Index = () => {
-    useBlockBack(true);
+
     return (
         <View style={styles.container}>
 
@@ -21,10 +21,15 @@ const Index = () => {
                 resizeMode="contain"
             />
 
+            <Button
+                title="Jugar"
+                variant="filled"
+                onPress={() => {
+                    router.push("/game-mode");
+                }}/>
+
             {/* Jugar → Navega al GameMode, como hacer push */}
-            <Link href="/game-mode" asChild>
-                <Button title="Jugar" variant="filled" />
-            </Link>
+
 
             {/* Botón Reglas solo texto subrayado */}
             <TextButton title="Reglas" onPress={() => console.log("Reglas presionado")} />

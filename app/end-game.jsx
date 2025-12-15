@@ -1,11 +1,13 @@
-import { View, Text, StyleSheet, TouchableOpacity } from "react-native";
+import { View, Text, StyleSheet } from "react-native";
 import Button from "../components/Button";
 import { router } from "expo-router";
 import { useGame } from "../contexts/GameContext";
+import { useBlockBack } from "../hooks/useBlockBack";
 
 const EndGame = () => {
   const { players, scores, resetRoundState, resetWholeGame, playType } = useGame();
-
+  // 🔒 back totalmente bloqueado
+  useBlockBack(true); 
   // Convertimos los datos a una lista ordenada
   const ranking = players
     .map((p) => ({ name: p, points: scores[p] }))
@@ -15,48 +17,47 @@ const EndGame = () => {
   const winners = ranking.filter((p) => p.points === maxScore);
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>🎉 Fin de la partida</Text>
+    
+      <View style={styles.container}>
+        <Text style={styles.title}>🎉 Fin de la partida</Text>
 
-      {winners.length === 1 ? (
-        <Text style={styles.winner}>Ganador: {winners[0].name}</Text>
-      ) : (
-        <Text style={styles.winner}>
-          Empate entre: {winners.map(w => w.name).join(", ")}
-        </Text>
-      )}
+        {winners.length === 1 ? (
+          <Text style={styles.winner}>Ganador: {winners[0].name}</Text>
+        ) : (
+          <Text style={styles.winner}>
+            Empate entre: {winners.map(w => w.name).join(", ")}
+          </Text>
+        )}
 
-      <View style={styles.listContainer}>
-        {ranking.map((p, index) => (
-          <View key={`${p.name}-${index}`} style={styles.row}>
-            <Text style={styles.player}>{p.name}</Text>
-            <Text style={styles.score}>{p.points} pts</Text>
-          </View>
-        ))}
+        <View style={styles.listContainer}>
+          {ranking.map((p, index) => (
+            <View key={`${p.name}-${index}`} style={styles.row}>
+              <Text style={styles.player}>{p.name}</Text>
+              <Text style={styles.score}>{p.points} pts</Text>
+            </View>
+          ))}
+
+        </View>
+
+        <Button
+          title="Jugar otra vez"
+          onPress={() => {
+            resetRoundState();
+            router.replace(`/${playType}-mode`);
+          }}
+        />
+
+        <Button
+          title="Volver al inicio"
+          onPress={() => {
+            resetWholeGame();
+            router.replace(`/`);
+          }}
+          variant="outline"
+        />
 
       </View>
-
-      <Button
-        title="Jugar otra vez"
-        onPress={() => {
-          resetRoundState();
-          router.replace(`/${playType}-mode`);
-        }}
-      />
-
-
-
-      <Button
-        title="Volver al inicio"
-        onPress={() => {
-          resetWholeGame();
-          router.replace(`/`);
-        }}
-        variant="outline"
-      />
-
-
-    </View>
+    
   );
 };
 

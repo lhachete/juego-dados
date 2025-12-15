@@ -154,16 +154,19 @@ const ManualMode = () => {
         }
     }, []);
 
-    // Bloquear botón atrás si la partida ha comenzado (no uso el hook porque aquí ya se maneja con un modal)
+    // Confirmar salida si el juego ha comenzado, bloquear navegación.
     useEffect(() => {
         const unsubscribe = navigation.addListener("beforeRemove", (e) => {
             if (!isGameStarted) return;
+
             e.preventDefault();
             setExitModalVisible(true);
         });
 
         return unsubscribe;
     }, [navigation, isGameStarted]);
+
+
 
 
 
