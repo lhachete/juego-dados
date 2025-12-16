@@ -5,16 +5,13 @@ import Title from "../components/Title";
 import logo from "../assets/logo.png";
 import TextButton from "../components/TextButton";
 
-
 const Index = () => {
 
     return (
         <View style={styles.container}>
 
-            {/* Título */}
             <Title>Royal Dices</Title>
 
-            {/* Imagen */}
             <Image
                 source={logo}
                 style={styles.logo}
@@ -24,12 +21,8 @@ const Index = () => {
             <Button
                 title="Jugar"
                 variant="filled"
-                onPress={() => {
-                    router.push("/game-mode");
-                }}/>
-
-            {/* Jugar → Navega al GameMode, como hacer push */}
-
+                onPress={() => router.push("/game-mode")}
+            />
 
             {/* Botón Reglas solo texto subrayado */}
             <TextButton title="Reglas" onPress={() => console.log("Reglas presionado")} />

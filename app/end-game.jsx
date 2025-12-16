@@ -51,7 +51,7 @@ const EndGame = () => {
           title="Volver al inicio"
           onPress={() => {
             resetWholeGame();
-            router.replace(`/`);
+            router.dismissAll();
           }}
           variant="outline"
         />

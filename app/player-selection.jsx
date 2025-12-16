@@ -1,6 +1,7 @@
 import { View, Text, TextInput, StyleSheet, TouchableOpacity, Alert } from "react-native";
 import { router } from "expo-router";
 import { useGame } from "../contexts/GameContext";
+import { validatePlayers } from "biblioteca/funcioteca";
 import Button from "../components/Button";
 
 const PlayerSelection = () => {
@@ -23,37 +24,6 @@ const PlayerSelection = () => {
     updated[index] = text;
     setPlayers(updated);
   };
-
-  const handleContinue = () => {
-    // Normalizamos nombres
-    const trimmedPlayers = players.map(p => p.trim());
-
-    // ❌ Nombres vacíos
-    const hasEmpty = trimmedPlayers.some(p => p === "");
-    if (hasEmpty) {
-      Alert.alert(
-        "Jugadores incompletos",
-        "Todos los jugadores deben tener nombre."
-      );
-      return;
-    }
-
-    // ❌ Nombres duplicados
-    const normalized = trimmedPlayers.map(p => p.toLowerCase());
-    const hasDuplicates = new Set(normalized).size !== normalized.length;
-    if (hasDuplicates) {
-      Alert.alert(
-        "Jugadores repetidos",
-        "Los nombres de los jugadores no pueden repetirse."
-      );
-      return;
-    }
-
-    // ✅ Todo correcto → iniciar partida
-    router.replace(`/${playType}-mode`);
-  };
-
-
 
   return (
     <View style={styles.container}>
@@ -79,13 +49,25 @@ const PlayerSelection = () => {
           </View>
         ))}
       </View>
+
       {players.length < 6 && (
         <Button title="Añadir jugador" onPress={handleAddPlayer} variant="outline" />
       )}
 
-      <View style={{ height: 20 }} />
+      <Button
+        title="Continuar"
+        onPress={() => {
+          const result = validatePlayers(players);
 
-      <Button title="Continuar" onPress={handleContinue} variant="filled" />
+          if (!result.valid) {
+            Alert.alert("Error", result.error);
+            return;
+          }
+
+          router.replace(`/${playType}-mode`);
+        }}
+      />
+
     </View>
   );
 };
