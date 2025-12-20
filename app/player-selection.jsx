@@ -9,7 +9,7 @@ const PlayerSelection = () => {
   const { players, setPlayers, playType } = useGame();
 
   const handleAddPlayer = () => {
-    if (players.length >= 6) return;
+    if (players.length >= 10) return;
     setPlayers([...players, ""]);
   };
 
@@ -39,18 +39,18 @@ const PlayerSelection = () => {
               value={player}
               onChangeText={(text) => handleChangeText(text, index)}
             />
-
-            <TouchableOpacity
+            {players.length > 2 && <TouchableOpacity
               onPress={() => handleRemovePlayer(index)}
               style={styles.removeBtn}
             >
               <Text style={styles.removeText}>-</Text>
             </TouchableOpacity>
+            }
           </View>
         ))}
       </View>
 
-      {players.length < 6 && (
+      {players.length < 10 && (
         <Button title="Añadir jugador" onPress={handleAddPlayer} variant="outline" />
       )}
 

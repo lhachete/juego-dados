@@ -45,7 +45,7 @@ const ManualMode = () => {
     const currentPlayer = players[turn];
     const TOTAL_ROUNDS = 12;
 
-    // Al pulsar una figura → solo se selecciona (NO abre modal)
+    // Al pulsar una figura, se abre el modal para seleccionar cantidad, además de marcarla como seleccionada
     const handleFacePress = (face) => {
         setSelectedFace(face);
         setModalVisible(true);
@@ -258,9 +258,14 @@ const ManualMode = () => {
                         >
                             <Text style={styles.modalConfirmText}>Confirmar</Text>
                         </TouchableOpacity>
+                        {/* BOTÓN CANCELAR */}
                         <TouchableOpacity
                             style={styles.cancelBtn}
-                            onPress={() => setModalVisible(false)}
+                            onPress={() => {
+                                setModalVisible(false);
+                                setSelectedFace(null);
+                                setSelectedCount(null);
+                            }}
                         >
                             <Text style={styles.cancelText}>Cancelar</Text>
                         </TouchableOpacity>
