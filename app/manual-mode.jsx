@@ -6,6 +6,7 @@ import { useGame } from "../contexts/GameContext";
 import ScoresModal from "../components/ScoresModal";
 import ExitGameModal from "../components/ExitGameModal";
 import SecondPhaseModal from "../components/SecondPhaseModal";
+import FiguresGrid from "../components/FiguresGrid";
 import DADES from "./dades.jsx";
 
 const ManualMode = () => {
@@ -152,34 +153,22 @@ const ManualMode = () => {
 
     return (
         <View style={styles.container}>
-            
+
             <Text style={styles.roundText}> Ronda {round} / {TOTAL_ROUNDS}</Text>
             <Text style={styles.title}>Turno de {currentPlayer}</Text>
             <Text style={styles.currentPlayerScore}> Puntos: {currentPlayer in scores ? scores[currentPlayer] : 0} </Text>
             <Text style={styles.subtitle}>Figuras por completar</Text>
 
             {/* GRID DE FIGURAS */}
-            <View style={styles.grid}>
-                {DADES.map((face) => {
-                    const isSelected = selectedFace?.id === face.id;
-                    const isDisabled = disabledFaces[currentPlayer]?.includes(face.id) ?? false;
+            <FiguresGrid
+  faces={DADES}
+  disabledFaces={disabledFaces[currentPlayer]}
+  interactive={true}
+  onFacePress={handleFacePress}
+  variant="manual"
+/>
 
-                    return (
-                        <TouchableOpacity
-                            key={face.id}
-                            style={[
-                                styles.faceBox,
-                                isSelected && styles.faceSelected,
-                                isDisabled && styles.faceDisabled,
-                            ]}
-                            onPress={() => !isDisabled && handleFacePress(face)}
-                            disabled={isDisabled}
-                        >
-                            <Image source={face.img} style={styles.faceImg} resizeMode="contain" />
-                        </TouchableOpacity>
-                    );
-                })}
-            </View>
+
 
             <TouchableOpacity
                 style={styles.viewScoresBtn}

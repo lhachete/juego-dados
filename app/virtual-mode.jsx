@@ -6,6 +6,7 @@ import { router } from "expo-router";
 import { useGame } from "../contexts/GameContext";
 import ScoresModal from "../components/ScoresModal";
 import ExitGameModal from "../components/ExitGameModal";
+import FiguresGridModal from "../components/FiguresGridModal";
 import DADES from "./dades.jsx";
 
 const VirtualMode = () => {
@@ -59,31 +60,12 @@ const VirtualMode = () => {
 
 
             {/* ---- GRID INFORMATIVO ---- */}
-            <Modal transparent visible={figuresModalVisible} animationType="fade">
-                <View style={styles.modalBackdrop}>
-                    <View style={styles.modalContent}>
-                        <Text style={styles.modalTitle}>Figuras por completar</Text>
+            <FiguresGridModal
+  visible={figuresModalVisible}
+  onClose={() => setFiguresModalVisible(false)}
+  faces={DADES}
+/>
 
-                        <View style={styles.grid}>
-                            {DADES.map((face) => (
-                                <View key={face.id} style={styles.faceBox}>
-                                    <Image
-                                        source={face.img}
-                                        style={styles.faceImg}
-                                        resizeMode="contain"
-                                    />
-                                </View>
-                            ))}
-                        </View>
-
-                        <TouchableOpacity
-                            onPress={() => setFiguresModalVisible(false)}
-                        >
-                            <Text style={styles.closeText}>Cerrar</Text>
-                        </TouchableOpacity>
-                    </View>
-                </View>
-            </Modal>
 
 
             {/* ---- NUEVA FUNCIONALIDAD (VACÍO) ---- */}
