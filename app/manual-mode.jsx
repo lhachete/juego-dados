@@ -1,25 +1,18 @@
 import { useState, useEffect } from "react";
+import { View, Text, StyleSheet, TouchableOpacity, Modal, Image } from "react-native";
+import { useNavigation } from "@react-navigation/native";
+import { router } from "expo-router";
+import { useGame } from "../contexts/GameContext";
 import ScoresModal from "../components/ScoresModal";
 import ExitGameModal from "../components/ExitGameModal";
 import SecondPhaseModal from "../components/SecondPhaseModal";
 import DADES from "./dades.jsx";
-import {
-    View,
-    Text,
-    StyleSheet,
-    TouchableOpacity,
-    Modal,
-    Image,
-} from "react-native";
-import { useGame } from "../contexts/GameContext";
-import { router } from "expo-router";
-import { useNavigation } from "@react-navigation/native";
 
 const ManualMode = () => {
-    const { players, scores, setScores, turn, setTurn, round, setRound,
+    const { players, scores, setScores, turn, setTurn, round, setRound, TOTAL_ROUNDS,
         secondPhaseOrder, setSecondPhaseOrder, secondPhaseStep, setSecondPhaseStep,
         scoresModalVisible, setScoresModalVisible, exitGame, finishGame, isGameStarted,
-        startGame
+        startGame, resetGame,
     } = useGame();
     const [selectedFace, setSelectedFace] = useState(null);
     const [modalVisible, setModalVisible] = useState(false);
@@ -36,15 +29,7 @@ const ManualMode = () => {
         }, {})
     );
 
-    //reiniciar turno y ronda al entrar de nuevo
-    const resetGame = () => {
-        setTurn(0);
-        setRound(1);
-    }
-
-
     const currentPlayer = players[turn];
-    const TOTAL_ROUNDS = 12;
 
     // Al pulsar una figura, se abre el modal para seleccionar cantidad, además de marcarla como seleccionada
     const handleFacePress = (face) => {
@@ -111,7 +96,6 @@ const ManualMode = () => {
                     setPhaseModalVisible(true);
                 }
             }
-
             setTurn(0);
 
         } else {
@@ -136,15 +120,13 @@ const ManualMode = () => {
         setSecondPhaseOrder(order);
         setSecondPhaseStep(0); // Comenzar por la primera del orden
 
-
-        // Reiniciar disabledFaces dejando todas figuras bloqueadas excepto la primera de la orden
+        // Reiniciar disabledFaces dejando todas figuras bloqueadas excepto la primera de la orden.
         const firstId = order[0];
         const updated = {};
         players.forEach(p => {
             updated[p] = DADES.map(f => f.id).filter(id => id !== firstId);
         });
         setDisabledFaces(updated);
-
         setPhaseModalVisible(false);
     };
 
@@ -159,7 +141,6 @@ const ManualMode = () => {
     useEffect(() => {
         const unsubscribe = navigation.addListener("beforeRemove", (e) => {
             if (!isGameStarted) return;
-
             e.preventDefault();
             setExitModalVisible(true);
         });
@@ -169,21 +150,12 @@ const ManualMode = () => {
 
 
 
-
-
     return (
         <View style={styles.container}>
-            {/* ---- RONDA ---- */}
-            <Text style={styles.roundText}>
-                Ronda {round} / {TOTAL_ROUNDS}
-            </Text>
-
-            {/* ---- Turno ---- */}
+            
+            <Text style={styles.roundText}> Ronda {round} / {TOTAL_ROUNDS}</Text>
             <Text style={styles.title}>Turno de {currentPlayer}</Text>
-            {/* ---- Puntos del jugador ---- */}
-            <Text style={styles.currentPlayerScore}>
-                Puntos: {currentPlayer in scores ? scores[currentPlayer] : 0}
-            </Text>
+            <Text style={styles.currentPlayerScore}> Puntos: {currentPlayer in scores ? scores[currentPlayer] : 0} </Text>
             <Text style={styles.subtitle}>Figuras por completar</Text>
 
             {/* GRID DE FIGURAS */}

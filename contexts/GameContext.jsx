@@ -15,6 +15,7 @@ export const GameProvider = ({ children }) => {
   // índice actual de la figura en segunda tanda
   const [secondPhaseStep, setSecondPhaseStep] = useState(0);
   const [isGameStarted, setIsGameStarted] = useState(false);
+  const TOTAL_ROUNDS = 12;
 
   const startGame = () => {
     const initialScores = {};
@@ -42,6 +43,11 @@ export const GameProvider = ({ children }) => {
     setSecondPhaseStep(0);
   };
 
+    const resetGame = () => {
+        setTurn(0);
+        setRound(1);
+    }
+
 const exitGame = () => {
     resetRoundState();
     setPlayers(["", ""]);
@@ -61,6 +67,7 @@ const exitGame = () => {
         setPlayType,
         players,
         setPlayers,
+        TOTAL_ROUNDS,
         scores,
         setScores,
         scoresModalVisible,
@@ -76,6 +83,7 @@ const exitGame = () => {
         isGameStarted,
         startGame,
         resetRoundState,
+        resetGame,
         exitGame,
         finishGame
 

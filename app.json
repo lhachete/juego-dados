@@ -15,6 +15,7 @@
       "expo-router"
     ],
     "orientation": "portrait",
+    "platforms": ["android"],
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "splash": {

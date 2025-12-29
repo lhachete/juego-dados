@@ -111,13 +111,13 @@ const styles = StyleSheet.create({
   removeBtn: {
     width: 40,
     height: 40,
-    backgroundColor: "#7F1D1D", // rojo oscuro estilo tailwind "red-900"
+    backgroundColor: "#7F1D1D",
     justifyContent: "center",
     alignItems: "center",
     borderRadius: 8,
   },
   removeText: {
-    color: "#F87171", // rojo claro estilo "red-400"
+    color: "#F87171",
     fontSize: 28,
     fontWeight: "900",
     marginTop: -4,

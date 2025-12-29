@@ -52,8 +52,7 @@ const GameMode = () => {
             variant="outline"
             onPress={() => {
               setPlayType("virtual");
-              // más adelante implementamos su pantalla -->
-              // router.push("/player-selection");
+              router.push("/player-selection");
             }}
             
           />
