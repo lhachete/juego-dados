@@ -7,11 +7,15 @@ const ScoresModal = ({ visible, players, scores, onClose }) => {
         <View style={styles.modalContent}>
           <Text style={styles.modalTitle}>Puntuaciones totales</Text>
 
-          {players.map((player) => (
-            <Text key={player} style={styles.scoreText}>
-              {player}: {scores[player] || 0} pts
-            </Text>
-          ))}
+          <View style={styles.listContainer}>
+            {players.map((player) => (
+              <View key={player} style={styles.row}>
+                <Text style={styles.player}>{player}</Text>
+                <Text style={styles.score}>{scores[player] || 0} pts</Text>
+              </View>
+            ))}
+          </View>
+
 
           <TouchableOpacity style={styles.closeBtn} onPress={onClose}>
             <Text style={styles.closeText}>Cerrar</Text>
@@ -44,11 +48,6 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     marginBottom: 20,
   },
-  scoreText: {
-    color: "white",
-    fontSize: 18,
-    marginBottom: 6,
-  },
   closeBtn: {
     marginTop: 20,
     backgroundColor: "#FACC15",
@@ -61,4 +60,25 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "700",
   },
+  // Estilos de la lista de puntuaciones
+  listContainer: {
+    width: "100%",
+    marginBottom: 20,
+  },
+  row: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    paddingVertical: 8,
+    borderBottomColor: "#374151",
+    borderBottomWidth: 1,
+  },
+  player: {
+    color: "white",
+    fontSize: 18,
+  },
+  score: {
+    color: "#A5B4FC",
+    fontSize: 18,
+  },
+
 });

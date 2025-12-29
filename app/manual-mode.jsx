@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import ScoresModal from "../components/ScoresModal";
 import ExitGameModal from "../components/ExitGameModal";
+import SecondPhaseModal from "../components/SecondPhaseModal";
 import DADES from "./dades.jsx";
 import {
     View,
@@ -271,54 +272,16 @@ const ManualMode = () => {
                         </TouchableOpacity>
                     </View>
 
-
-
-
                 </View>
             </Modal>
 
             {/* --- MODAL ESPECIAL SEGUNDA FASE (RONDA 7) --- */}
-            <Modal transparent visible={phaseModalVisible} animationType="fade">
-                <View style={styles.modalBackdrop}>
-                    <View style={styles.modalContent}>
-                        <Text style={styles.modalTitle}>Puntuaciones actuales</Text>
-
-                        {players.map((p) => (
-                            <Text key={p} style={{ color: "white", fontSize: 18, marginBottom: 6 }}>
-                                {p}: {scores[p] || 0} pts
-                            </Text>
-                        ))}
-
-                        <Text
-                            style={{
-                                color: "#FACC15",
-                                fontSize: 20,
-                                fontWeight: "700",
-                                marginVertical: 20,
-                                textAlign: "center",
-                            }}
-                        >
-                            ¿Cómo vais a empezar la segunda tanda?
-                        </Text>
-
-                        {/* Botón negras */}
-                        <TouchableOpacity
-                            style={[styles.modalNegras, { marginBottom: 20 }]}
-                            onPress={() => handleSecondPhaseSelect("negras")}
-                        >
-                            <Text style={styles.modalWhiteText}>Empezando por Negras</Text>
-                        </TouchableOpacity>
-
-                        {/* Botón ás */}
-                        <TouchableOpacity
-                            style={styles.modalAses}
-                            onPress={() => handleSecondPhaseSelect("as")}
-                        >
-                            <Text style={styles.modalWhiteText}>Empezando por Áses</Text>
-                        </TouchableOpacity>
-                    </View>
-                </View>
-            </Modal>
+            <SecondPhaseModal
+                visible={phaseModalVisible}
+                players={players}
+                scores={scores}
+                onSelect={handleSecondPhaseSelect}
+            />
 
             {/* ---- MODAL PUNTUACIONES TOTALES ---- */}
             <ScoresModal
@@ -349,11 +312,7 @@ const ManualMode = () => {
                     router.replace("/end-game");
                 }}
             />
-
-
-
         </View>
-
 
     );
 };
@@ -492,25 +451,6 @@ const styles = StyleSheet.create({
         fontWeight: "700",
         color: "#1F2937",
     },
-    modalWhiteText: {
-        fontSize: 18,
-        fontWeight: "700",
-        color: "#FFFFFF",
-    },
-    modalNegras: {
-        backgroundColor: "#020202",
-        paddingVertical: 10,
-        paddingHorizontal: 40,
-        borderRadius: 10,
-        marginBottom: 10,
-    },
-    modalAses: {
-        backgroundColor: "#FA0824",
-        paddingVertical: 10,
-        paddingHorizontal: 47,
-        borderRadius: 10,
-        marginBottom: 10,
-    },
     cancelBtn: {
         marginTop: 5,
     },
@@ -529,7 +469,6 @@ const styles = StyleSheet.create({
     },
     viewScoresBtn: {
         marginTop: 20,
-
         paddingVertical: 10,
         paddingHorizontal: 30,
         borderRadius: 10,
