@@ -109,7 +109,7 @@ const styles = StyleSheet.create({
     marginRight: 10,
   },
   removeBtn: {
-    width: 40,
+    width: 60,
     height: 40,
     backgroundColor: "#7F1D1D",
     justifyContent: "center",

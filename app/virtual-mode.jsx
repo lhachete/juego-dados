@@ -18,6 +18,29 @@ const VirtualMode = () => {
     const currentPlayer = players[turn];
     const [exitModalVisible, setExitModalVisible] = useState(false);
     const [figuresModalVisible, setFiguresModalVisible] = useState(false);
+    const [diceResults, setDiceResults] = useState([]); // resultados visibles
+    const [isRolling, setIsRolling] = useState(false);
+    const [rollsLeft, setRollsLeft] = useState(3);
+
+    const rollDice = async () => {
+        if (isRolling || rollsLeft === 0) return;
+
+        setIsRolling(true);
+        setDiceResults([]); // limpiamos dados anteriores
+
+        for (let i = 0; i < 5; i++) {
+            const value = Math.floor(Math.random() * 6) + 1;
+
+            await new Promise((resolve) => setTimeout(resolve, 300));
+
+            setDiceResults((prev) => [...prev, value]);
+        }
+
+        setRollsLeft((prev) => prev - 1);
+        setIsRolling(false);
+    };
+
+
 
 
     // Iniciar juego si no está iniciado
@@ -61,17 +84,58 @@ const VirtualMode = () => {
 
             {/* ---- GRID INFORMATIVO ---- */}
             <FiguresGridModal
-  visible={figuresModalVisible}
-  onClose={() => setFiguresModalVisible(false)}
-  faces={DADES}
-/>
+                visible={figuresModalVisible}
+                onClose={() => setFiguresModalVisible(false)}
+                faces={DADES}
+            />
 
 
 
-            {/* ---- NUEVA FUNCIONALIDAD (VACÍO) ---- */}
+            {/* ---- NUEVA FUNCIONALIDAD ---- */}
             <View style={styles.virtualActionArea}>
-                {/* Aquí irá la nueva funcionalidad del modo virtual */}
+
+                {/* ZONA SUPERIOR */}
+                <View style={styles.topArea}>
+                    <Text style={styles.textInfo}>
+                        Selecciona los dados que quieras conservar
+                    </Text>
+                </View>
+
+                {/* ZONA CENTRAL (dados / cubilete) */}
+                <View style={styles.middleArea}>
+                    <View style={styles.diceRow}>
+                        {diceResults.map((value, index) => (
+                            <Image
+                                key={index}
+                                source={DADES[value - 1].img}
+                                style={styles.diceImg}
+                                resizeMode="contain"
+                            />
+                        ))}
+                    </View>
+                </View>
+
+                {/* ZONA INFERIOR */}
+                <View style={styles.bottomArea}>
+                    <Text style={styles.rollsText}>
+                        Tiradas restantes: {rollsLeft}
+                    </Text>
+
+                    <TouchableOpacity
+                        style={[
+                            styles.rollBtn,
+                            (isRolling || rollsLeft === 0) && { opacity: 0.4 }
+                        ]}
+                        disabled={isRolling || rollsLeft === 0}
+                        onPress={rollDice}
+                    >
+                        <Text style={styles.rollBtnText}>Tirar dados</Text>
+                    </TouchableOpacity>
+                </View>
+
             </View>
+
+
 
             {/* ---- VER PUNTUACIONES ---- */}
             <TouchableOpacity
@@ -179,6 +243,21 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderColor: "#1F2937",
     },
+    topArea: {
+        flex: 0.5,
+        justifyContent: "center",
+    },
+    middleArea: {
+        flex: 4, // 👈 más grande
+        justifyContent: "center",
+        alignItems: "center",
+    },
+    bottomArea: {
+        flex: 1.5,
+        justifyContent: "center",
+        alignItems: "center",
+    },
+
 
     viewScoresBtn: {
         marginBottom: 30,
@@ -193,7 +272,7 @@ const styles = StyleSheet.create({
         fontWeight: "600",
     },
     // ---- ESTILOS MODAL FIGURAS ----
-        modalBackdrop: {
+    modalBackdrop: {
         flex: 1,
         backgroundColor: "rgba(0,0,0,0.5)",
         justifyContent: "center",
@@ -227,5 +306,47 @@ const styles = StyleSheet.create({
         fontSize: 18,
         fontWeight: "600",
     },
+    // ---- ESTILOS DADOS ----
+    rollBtn: {
+        marginTop: 20,
+        paddingVertical: 14,
+        paddingHorizontal: 40,
+        backgroundColor: "#FACC15",
+        borderRadius: 12,
+
+    },
+
+    rollBtnText: {
+        color: "#1F2937",
+        fontSize: 18,
+        fontWeight: "700",
+        alignSelf: "center",
+    },
+
+    diceRow: {
+        flexDirection: "row",
+        justifyContent: "center",
+        flexWrap: "wrap",
+        marginTop: 20,
+    },
+
+    diceImg: {
+        width: 100,
+        height: 100,
+        margin: 12,
+    },
+
+    rollsText: {
+        marginTop: 15,
+        color: "#9CA3AF",
+        fontSize: 16,
+        alignSelf: "center",
+    },
+    textInfo: {
+        color: "#FACC15",
+        fontSize: 16,
+        alignSelf: "center",
+    },
+
 
 });
