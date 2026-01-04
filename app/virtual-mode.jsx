@@ -19,27 +19,51 @@ const VirtualMode = () => {
     const [exitModalVisible, setExitModalVisible] = useState(false);
     const [figuresModalVisible, setFiguresModalVisible] = useState(false);
     const [diceResults, setDiceResults] = useState([]); // resultados visibles
+    /*
+        [
+            { value: 3, locked: false },
+            { value: 6, locked: true },
+            ...
+        ]
+    */
     const [isRolling, setIsRolling] = useState(false);
     const [rollsLeft, setRollsLeft] = useState(3);
 
     const rollDice = async () => {
         if (isRolling || rollsLeft === 0) return;
-
         setIsRolling(true);
-        setDiceResults([]); // limpiamos dados anteriores
+
+        // Si es la primera tirada, inicializamos los 6 dados
+        let newDice = diceResults.length === 0
+            ? Array.from({ length: 6 }, () => ({ value: null, locked: false }))
+            : [...diceResults];
 
         for (let i = 0; i < 5; i++) {
+            if (newDice[i].locked) continue;
+
             const value = Math.floor(Math.random() * 6) + 1;
 
             await new Promise((resolve) => setTimeout(resolve, 300));
 
-            setDiceResults((prev) => [...prev, value]);
+            newDice[i] = { value, locked: false };
+            setDiceResults([...newDice]);
         }
 
         setRollsLeft((prev) => prev - 1);
         setIsRolling(false);
     };
 
+
+    //Función para seleccionar/deseleccionar dados
+    const lockDices = (index) => {
+        if (isRolling) return;
+
+        setDiceResults((prev) =>
+            prev.map((die, i) =>
+                i === index ? { ...die, locked: !die.locked } : die
+            )
+        );
+    };
 
 
 
@@ -104,15 +128,30 @@ const VirtualMode = () => {
                 {/* ZONA CENTRAL (dados / cubilete) */}
                 <View style={styles.middleArea}>
                     <View style={styles.diceRow}>
-                        {diceResults.map((value, index) => (
-                            <Image
+                        {diceResults.map((die, index) => (
+                            <TouchableOpacity
                                 key={index}
-                                source={DADES[value - 1].img}
-                                style={styles.diceImg}
-                                resizeMode="contain"
-                            />
+                                onPress={() => lockDices(index)}
+                                activeOpacity={0.8}
+                            >
+                                <View
+                                    style={[
+                                        styles.diceWrapper,
+                                        die.locked && styles.diceLocked
+                                    ]}
+                                >
+                                    {die.value && (
+                                        <Image
+                                            source={DADES[die.value - 1].img}
+                                            style={styles.diceImg}
+                                            resizeMode="contain"
+                                        />
+                                    )}
+                                </View>
+                            </TouchableOpacity>
                         ))}
                     </View>
+
                 </View>
 
                 {/* ZONA INFERIOR */}
@@ -237,11 +276,12 @@ const styles = StyleSheet.create({
     virtualActionArea: {
         width: "90%",
         flex: 1,
-        marginVertical: 15,
+        marginVertical: 10,
         borderRadius: 12,
-        backgroundColor: "#0F172A",
-        borderWidth: 1,
-        borderColor: "#1F2937",
+        /*         backgroundColor: "#0F172A",
+                borderWidth: 1, 
+                borderColor: "#1F2937",*/
+
     },
     topArea: {
         flex: 0.5,
@@ -328,6 +368,7 @@ const styles = StyleSheet.create({
         justifyContent: "center",
         flexWrap: "wrap",
         marginTop: 20,
+        gap: 12,
     },
 
     diceImg: {
@@ -346,6 +387,16 @@ const styles = StyleSheet.create({
         color: "#FACC15",
         fontSize: 16,
         alignSelf: "center",
+    },
+    //Dado seleccionado
+    diceWrapper: {
+        borderWidth: 2,
+        borderColor: "transparent",
+        borderRadius: 12,
+    },
+
+    diceLocked: {
+        borderColor: "#FACC15",
     },
 
 
