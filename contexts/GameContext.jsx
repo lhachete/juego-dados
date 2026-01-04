@@ -43,12 +43,12 @@ export const GameProvider = ({ children }) => {
     setSecondPhaseStep(0);
   };
 
-    const resetGame = () => {
-        setTurn(0);
-        setRound(1);
-    }
+  const resetGame = () => {
+    setTurn(0);
+    setRound(1);
+  }
 
-const exitGame = () => {
+  const exitGame = () => {
     resetRoundState();
     setPlayers(["", ""]);
     setIsGameStarted(false);
@@ -57,6 +57,27 @@ const exitGame = () => {
   const finishGame = () => {
     setIsGameStarted(false);
   };
+
+  //virtual-mode
+  const addScore = (player, points) => {
+    setScores(prev => ({
+      ...prev,
+      [player]: (prev[player] || 0) + points,
+    }));
+  };
+
+  const nextTurn = () => {
+    setTurn(prevTurn => {
+      if (prevTurn + 1 < players.length) {
+        return prevTurn + 1;
+      } else {
+        // Nueva ronda
+        setRound(prevRound => prevRound + 1);
+        return 0;
+      }
+    });
+  };
+
 
   return (
     <GameContext.Provider
@@ -72,6 +93,8 @@ const exitGame = () => {
         setScores,
         scoresModalVisible,
         setScoresModalVisible,
+        addScore,
+        nextTurn,
 
         turn, setTurn,
         round, setRound,

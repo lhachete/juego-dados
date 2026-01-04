@@ -22,6 +22,8 @@ const VirtualMode = () => {
         finishGame,
         isGameStarted,
         startGame,
+        addScore,
+        nextTurn
     } = useGame();
 
     const navigation = useNavigation();
@@ -88,7 +90,16 @@ const VirtualMode = () => {
     /* 🧮 Calcular puntos + preparar modal */
     const handleScoreSelection = () => {
         const selected = diceResults.filter((d) => d.locked);
-        if (selected.length === 0) return;
+
+        // 👉 Caso: no ha seleccionado nada
+        if (selected.length === 0) {
+            setScorePreview({
+                faces: [],
+                total: 0,
+            });
+            setConfirmModalVisible(true);
+            return;
+        }
 
         const faces = selected.map((d) => d.face);
 
@@ -106,17 +117,26 @@ const VirtualMode = () => {
         setConfirmModalVisible(true);
     };
 
-    /* 🚀 Confirmar anotación (placeholder) */
+
+    /* 🚀 Confirmar anotación (por acabar) */
     const confirmScore = () => {
-        console.log("Anotando:", scorePreview);
+        // 1️⃣ Guardar puntos (aunque sean 0)
+        addScore(currentPlayer, scorePreview.total);
 
-        // 👉 aquí luego:
-        // - guardar puntos
-        // - pasar turno
-        // - resetear dados
+        // 2️⃣ Resetear dados
+        setDiceResults([]);
 
+        // 3️⃣ Resetear tiradas
+        setRollsLeft(3);
+
+        // 4️⃣ Cerrar modal
         setConfirmModalVisible(false);
+
+        // 5️⃣ Pasar turno
+        nextTurn();
     };
+
+
 
     useEffect(() => {
         if (!isGameStarted) startGame();
@@ -229,13 +249,22 @@ const VirtualMode = () => {
                             Confirmar anotación
                         </Text>
 
-                        <Text style={styles.modalText}>
-                            Has seleccionado {scorePreview.faces.length} dados:
-                        </Text>
+                        {scorePreview.faces.length === 0 ? (
+                            <Text style={styles.modalText}>
+                                No has seleccionado ningún dado
+                            </Text>
+                        ) : (
+                            <>
+                                <Text style={styles.modalText}>
+                                    Has seleccionado {scorePreview.faces.length} dados:
+                                </Text>
 
-                        <Text style={styles.modalFaces}>
-                            {scorePreview.faces.map(f => f.label).join(", ")}
-                        </Text>
+                                <Text style={styles.modalFaces}>
+                                    {scorePreview.faces.map(f => f.label).join(", ")}
+                                </Text>
+                            </>
+                        )}
+
 
                         <Text style={styles.modalPoints}>
                             Total: {scorePreview.total} puntos
@@ -411,7 +440,7 @@ const styles = StyleSheet.create({
         fontSize: 18,
         textDecorationLine: "underline",
     },
-    
+
     // ---- ESTILOS DADOS ----
     rollBtn: {
         marginTop: 20,
