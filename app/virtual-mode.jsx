@@ -1,6 +1,6 @@
 // virtual-mode.jsx
 import { useState, useEffect } from "react";
-import { View, Text, StyleSheet, Image, TouchableOpacity, Modal } from "react-native";
+import { View, Text, Image, TouchableOpacity, StyleSheet } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { router } from "expo-router";
 import { useGame } from "../contexts/GameContext";
@@ -10,42 +10,58 @@ import FiguresGridModal from "../components/FiguresGridModal";
 import DADES from "./dades.jsx";
 
 const VirtualMode = () => {
-    const { players, scores, turn, round, TOTAL_ROUNDS, scoresModalVisible, setScoresModalVisible,
-        exitGame, finishGame, isGameStarted, startGame,
+    const {
+        players,
+        scores,
+        turn,
+        round,
+        TOTAL_ROUNDS,
+        scoresModalVisible,
+        setScoresModalVisible,
+        exitGame,
+        finishGame,
+        isGameStarted,
+        startGame,
     } = useGame();
 
     const navigation = useNavigation();
     const currentPlayer = players[turn];
+
     const [exitModalVisible, setExitModalVisible] = useState(false);
     const [figuresModalVisible, setFiguresModalVisible] = useState(false);
-    const [diceResults, setDiceResults] = useState([]); // resultados visibles
-    /*
-        [
-            { value: 3, locked: false },
-            { value: 6, locked: true },
-            ...
-        ]
-    */
+
+    const [diceResults, setDiceResults] = useState([]);
     const [isRolling, setIsRolling] = useState(false);
     const [rollsLeft, setRollsLeft] = useState(3);
 
+    // 🎲 Tirar dados
     const rollDice = async () => {
         if (isRolling || rollsLeft === 0) return;
         setIsRolling(true);
 
-        // Si es la primera tirada, inicializamos los 6 dados
-        let newDice = diceResults.length === 0
-            ? Array.from({ length: 6 }, () => ({ value: null, locked: false }))
-            : [...diceResults];
+        let newDice =
+            diceResults.length === 0
+                ? Array.from({ length: 5 }, () => ({
+                    value: null,
+                    face: null,
+                    locked: false,
+                }))
+                : [...diceResults];
 
         for (let i = 0; i < 5; i++) {
             if (newDice[i].locked) continue;
 
-            const value = Math.floor(Math.random() * 6) + 1;
+            const randomFace =
+                DADES[Math.floor(Math.random() * DADES.length)];
 
-            await new Promise((resolve) => setTimeout(resolve, 300));
+            await new Promise((res) => setTimeout(res, 300));
 
-            newDice[i] = { value, locked: false };
+            newDice[i] = {
+                value: randomFace.id,
+                face: randomFace,
+                locked: false,
+            };
+
             setDiceResults([...newDice]);
         }
 
@@ -53,10 +69,41 @@ const VirtualMode = () => {
         setIsRolling(false);
     };
 
+    // 🔒 Validar selección
+    const canSelectDie = (index) => {
+        const die = diceResults[index];
+        if (die.locked) return true; // siempre permitir deseleccionar
 
-    //Función para seleccionar/deseleccionar dados
+        const selected = diceResults.filter((d, i) => d.locked && i !== index);
+        const faces = selected.map((d) => d.face.id);
+
+        const nonAsFaces = faces.filter((id) => id !== 6);
+        const uniqueNonAs = [...new Set(nonAsFaces)];
+
+        const newFaceId = die.face.id;
+
+        // más de una figura base
+        if (
+            newFaceId !== 6 &&
+            uniqueNonAs.length > 0 &&
+            !uniqueNonAs.includes(newFaceId)
+        ) {
+            return false;
+        }
+
+        // más de 3 figuras distintas
+        const uniqueFaces = new Set([...faces, newFaceId]);
+        if (uniqueFaces.size > 3) return false;
+
+        return true;
+    };
+
+    // 🔒 Bloquear / desbloquear dado
     const lockDices = (index) => {
-        if (isRolling) return;
+        if (isRolling || !diceResults[index].face) return;
+
+        // 👉 SOLO validar cuando ya no hay tiradas
+        if (rollsLeft === 0 && !canSelectDie(index)) return;
 
         setDiceResults((prev) =>
             prev.map((die, i) =>
@@ -66,15 +113,40 @@ const VirtualMode = () => {
     };
 
 
+    // 📝 Anotar puntos
+    const handleScoreSelection = () => {
+        const selected = diceResults.filter((d) => d.locked);
+        if (selected.length === 0) return;
 
-    // Iniciar juego si no está iniciado
-    useEffect(() => {
-        if (!isGameStarted) {
-            startGame();
+        const nonAs = selected.filter((d) => d.face.id !== 6);
+        const ases = selected.filter((d) => d.face.id === 6);
+
+        let totalPoints = 0;
+        let usedFigure = null;
+
+        if (nonAs.length === 0) {
+            // solo Ás
+            totalPoints = ases.length * 6;
+            usedFigure = "Ás";
+        } else {
+            // figura base + Ás
+            const baseFigure = nonAs[0].face;
+            totalPoints = selected.length * baseFigure.id;
+            usedFigure = baseFigure.label;
         }
+
+        console.log("Jugador:", currentPlayer);
+        console.log("Figura usada:", usedFigure);
+        console.log("Dados:", selected);
+        console.log("Puntos:", totalPoints);
+    };
+
+    // Iniciar juego
+    useEffect(() => {
+        if (!isGameStarted) startGame();
     }, []);
 
-    // Bloquear navegación si la partida está activa
+    // Bloquear navegación
     useEffect(() => {
         const unsubscribe = navigation.addListener("beforeRemove", (e) => {
             if (!isGameStarted) return;
@@ -87,7 +159,6 @@ const VirtualMode = () => {
 
     return (
         <View style={styles.container}>
-            {/* ---- INFO PARTIDA ---- */}
             <Text style={styles.roundText}>
                 Ronda {round} / {TOTAL_ROUNDS}
             </Text>
@@ -105,27 +176,21 @@ const VirtualMode = () => {
                 <Text style={styles.linkText}>Figuras por completar</Text>
             </TouchableOpacity>
 
-
-            {/* ---- GRID INFORMATIVO ---- */}
             <FiguresGridModal
                 visible={figuresModalVisible}
                 onClose={() => setFiguresModalVisible(false)}
                 faces={DADES}
             />
 
-
-
-            {/* ---- NUEVA FUNCIONALIDAD ---- */}
             <View style={styles.virtualActionArea}>
-
-                {/* ZONA SUPERIOR */}
                 <View style={styles.topArea}>
                     <Text style={styles.textInfo}>
-                        Selecciona los dados que quieras conservar
+                        {rollsLeft === 0
+                            ? "Selecciona los dados que te quieras anotar"
+                            : "Selecciona los dados que quieras conservar"}
                     </Text>
                 </View>
 
-                {/* ZONA CENTRAL (dados / cubilete) */}
                 <View style={styles.middleArea}>
                     <View style={styles.diceRow}>
                         {diceResults.map((die, index) => (
@@ -137,12 +202,12 @@ const VirtualMode = () => {
                                 <View
                                     style={[
                                         styles.diceWrapper,
-                                        die.locked && styles.diceLocked
+                                        die.locked && styles.diceLocked,
                                     ]}
                                 >
-                                    {die.value && (
+                                    {die.face && (
                                         <Image
-                                            source={DADES[die.value - 1].img}
+                                            source={die.face.img}
                                             style={styles.diceImg}
                                             resizeMode="contain"
                                         />
@@ -151,10 +216,8 @@ const VirtualMode = () => {
                             </TouchableOpacity>
                         ))}
                     </View>
-
                 </View>
 
-                {/* ZONA INFERIOR */}
                 <View style={styles.bottomArea}>
                     <Text style={styles.rollsText}>
                         Tiradas restantes: {rollsLeft}
@@ -163,28 +226,33 @@ const VirtualMode = () => {
                     <TouchableOpacity
                         style={[
                             styles.rollBtn,
-                            (isRolling || rollsLeft === 0) && { opacity: 0.4 }
+                            isRolling && { opacity: 0.4 },
                         ]}
-                        disabled={isRolling || rollsLeft === 0}
-                        onPress={rollDice}
+                        disabled={isRolling}
+                        onPress={
+                            rollsLeft === 0
+                                ? handleScoreSelection
+                                : rollDice
+                        }
                     >
-                        <Text style={styles.rollBtnText}>Tirar dados</Text>
+                        <Text style={styles.rollBtnText}>
+                            {rollsLeft === 0
+                                ? "Anotar puntos"
+                                : "Tirar dados"}
+                        </Text>
                     </TouchableOpacity>
                 </View>
-
             </View>
 
-
-
-            {/* ---- VER PUNTUACIONES ---- */}
             <TouchableOpacity
                 style={styles.viewScoresBtn}
                 onPress={() => setScoresModalVisible(true)}
             >
-                <Text style={styles.viewScoresText}>Ver puntuaciones</Text>
+                <Text style={styles.viewScoresText}>
+                    Ver puntuaciones
+                </Text>
             </TouchableOpacity>
 
-            {/* ---- MODAL PUNTUACIONES ---- */}
             <ScoresModal
                 visible={scoresModalVisible}
                 players={players}
@@ -192,7 +260,6 @@ const VirtualMode = () => {
                 onClose={() => setScoresModalVisible(false)}
             />
 
-            {/* ---- MODAL SALIR ---- */}
             <ExitGameModal
                 visible={exitModalVisible}
                 onCancel={() => setExitModalVisible(false)}
@@ -212,6 +279,7 @@ const VirtualMode = () => {
 };
 
 export default VirtualMode;
+
 
 const styles = StyleSheet.create({
     container: {
