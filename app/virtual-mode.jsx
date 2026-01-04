@@ -1,6 +1,6 @@
 // virtual-mode.jsx
 import { useState, useEffect } from "react";
-import { View, Text, Image, TouchableOpacity, StyleSheet } from "react-native";
+import { View, Text, Image, TouchableOpacity, Modal, StyleSheet } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { router } from "expo-router";
 import { useGame } from "../contexts/GameContext";
@@ -29,12 +29,17 @@ const VirtualMode = () => {
 
     const [exitModalVisible, setExitModalVisible] = useState(false);
     const [figuresModalVisible, setFiguresModalVisible] = useState(false);
+    const [confirmModalVisible, setConfirmModalVisible] = useState(false);
 
     const [diceResults, setDiceResults] = useState([]);
     const [isRolling, setIsRolling] = useState(false);
     const [rollsLeft, setRollsLeft] = useState(3);
+    const [scorePreview, setScorePreview] = useState({
+        faces: [],
+        total: 0,
+    });
 
-    // 🎲 Tirar dados
+    /* 🎲 Tirar dados */
     const rollDice = async () => {
         if (isRolling || rollsLeft === 0) return;
         setIsRolling(true);
@@ -54,7 +59,7 @@ const VirtualMode = () => {
             const randomFace =
                 DADES[Math.floor(Math.random() * DADES.length)];
 
-            await new Promise((res) => setTimeout(res, 300));
+            await new Promise((resolve) => setTimeout(resolve, 300));
 
             newDice[i] = {
                 value: randomFace.id,
@@ -69,41 +74,9 @@ const VirtualMode = () => {
         setIsRolling(false);
     };
 
-    // 🔒 Validar selección
-    const canSelectDie = (index) => {
-        const die = diceResults[index];
-        if (die.locked) return true; // siempre permitir deseleccionar
-
-        const selected = diceResults.filter((d, i) => d.locked && i !== index);
-        const faces = selected.map((d) => d.face.id);
-
-        const nonAsFaces = faces.filter((id) => id !== 6);
-        const uniqueNonAs = [...new Set(nonAsFaces)];
-
-        const newFaceId = die.face.id;
-
-        // más de una figura base
-        if (
-            newFaceId !== 6 &&
-            uniqueNonAs.length > 0 &&
-            !uniqueNonAs.includes(newFaceId)
-        ) {
-            return false;
-        }
-
-        // más de 3 figuras distintas
-        const uniqueFaces = new Set([...faces, newFaceId]);
-        if (uniqueFaces.size > 3) return false;
-
-        return true;
-    };
-
-    // 🔒 Bloquear / desbloquear dado
+    /* 🔒 Bloquear dados */
     const lockDices = (index) => {
         if (isRolling || !diceResults[index].face) return;
-
-        // 👉 SOLO validar cuando ya no hay tiradas
-        if (rollsLeft === 0 && !canSelectDie(index)) return;
 
         setDiceResults((prev) =>
             prev.map((die, i) =>
@@ -112,41 +85,43 @@ const VirtualMode = () => {
         );
     };
 
-
-    // 📝 Anotar puntos
+    /* 🧮 Calcular puntos + preparar modal */
     const handleScoreSelection = () => {
         const selected = diceResults.filter((d) => d.locked);
         if (selected.length === 0) return;
 
-        const nonAs = selected.filter((d) => d.face.id !== 6);
-        const ases = selected.filter((d) => d.face.id === 6);
+        const faces = selected.map((d) => d.face);
 
-        let totalPoints = 0;
-        let usedFigure = null;
+        const nonAces = faces.filter((f) => f.id !== 6);
+        const baseValue =
+            nonAces.length > 0 ? nonAces[0].id : 6;
 
-        if (nonAs.length === 0) {
-            // solo Ás
-            totalPoints = ases.length * 6;
-            usedFigure = "Ás";
-        } else {
-            // figura base + Ás
-            const baseFigure = nonAs[0].face;
-            totalPoints = selected.length * baseFigure.id;
-            usedFigure = baseFigure.label;
-        }
+        const totalPoints = selected.length * baseValue;
 
-        console.log("Jugador:", currentPlayer);
-        console.log("Figura usada:", usedFigure);
-        console.log("Dados:", selected);
-        console.log("Puntos:", totalPoints);
+        setScorePreview({
+            faces,
+            total: totalPoints,
+        });
+
+        setConfirmModalVisible(true);
     };
 
-    // Iniciar juego
+    /* 🚀 Confirmar anotación (placeholder) */
+    const confirmScore = () => {
+        console.log("Anotando:", scorePreview);
+
+        // 👉 aquí luego:
+        // - guardar puntos
+        // - pasar turno
+        // - resetear dados
+
+        setConfirmModalVisible(false);
+    };
+
     useEffect(() => {
         if (!isGameStarted) startGame();
     }, []);
 
-    // Bloquear navegación
     useEffect(() => {
         const unsubscribe = navigation.addListener("beforeRemove", (e) => {
             if (!isGameStarted) return;
@@ -159,11 +134,14 @@ const VirtualMode = () => {
 
     return (
         <View style={styles.container}>
+            {/* INFO */}
             <Text style={styles.roundText}>
                 Ronda {round} / {TOTAL_ROUNDS}
             </Text>
 
-            <Text style={styles.title}>Turno de {currentPlayer}</Text>
+            <Text style={styles.title}>
+                Turno de {currentPlayer}
+            </Text>
 
             <Text style={styles.currentPlayerScore}>
                 Puntos: {scores[currentPlayer] ?? 0}
@@ -173,7 +151,9 @@ const VirtualMode = () => {
                 style={styles.linkBtn}
                 onPress={() => setFiguresModalVisible(true)}
             >
-                <Text style={styles.linkText}>Figuras por completar</Text>
+                <Text style={styles.linkText}>
+                    Figuras por completar
+                </Text>
             </TouchableOpacity>
 
             <FiguresGridModal
@@ -182,6 +162,7 @@ const VirtualMode = () => {
                 faces={DADES}
             />
 
+            {/* ZONA JUEGO */}
             <View style={styles.virtualActionArea}>
                 <View style={styles.topArea}>
                     <Text style={styles.textInfo}>
@@ -197,12 +178,12 @@ const VirtualMode = () => {
                             <TouchableOpacity
                                 key={index}
                                 onPress={() => lockDices(index)}
-                                activeOpacity={0.8}
                             >
                                 <View
                                     style={[
                                         styles.diceWrapper,
-                                        die.locked && styles.diceLocked,
+                                        die.locked &&
+                                        styles.diceLocked,
                                     ]}
                                 >
                                     {die.face && (
@@ -224,11 +205,7 @@ const VirtualMode = () => {
                     </Text>
 
                     <TouchableOpacity
-                        style={[
-                            styles.rollBtn,
-                            isRolling && { opacity: 0.4 },
-                        ]}
-                        disabled={isRolling}
+                        style={styles.rollBtn}
                         onPress={
                             rollsLeft === 0
                                 ? handleScoreSelection
@@ -244,6 +221,51 @@ const VirtualMode = () => {
                 </View>
             </View>
 
+            {/* ---- MODAL CONFIRMACIÓN ANOTACIÓN ---- */}
+            <Modal transparent visible={confirmModalVisible} animationType="fade">
+                <View style={styles.modalBackdrop}>
+                    <View style={styles.modalContent}>
+                        <Text style={styles.modalTitle}>
+                            Confirmar anotación
+                        </Text>
+
+                        <Text style={styles.modalText}>
+                            Has seleccionado {scorePreview.faces.length} dados:
+                        </Text>
+
+                        <Text style={styles.modalFaces}>
+                            {scorePreview.faces.map(f => f.label).join(", ")}
+                        </Text>
+
+                        <Text style={styles.modalPoints}>
+                            Total: {scorePreview.total} puntos
+                        </Text>
+
+                        {/* CONFIRMAR */}
+                        <TouchableOpacity
+                            style={styles.modalConfirmBtn}
+                            onPress={confirmScore}
+                        >
+                            <Text style={styles.modalConfirmText}>
+                                Confirmar
+                            </Text>
+                        </TouchableOpacity>
+
+                        {/* CANCELAR */}
+                        <TouchableOpacity
+                            style={styles.cancelBtn}
+                            onPress={() => setConfirmModalVisible(false)}
+                        >
+                            <Text style={styles.cancelText}>
+                                Cancelar
+                            </Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </Modal>
+
+
+            {/* PUNTUACIONES */}
             <TouchableOpacity
                 style={styles.viewScoresBtn}
                 onPress={() => setScoresModalVisible(true)}
@@ -380,26 +402,6 @@ const styles = StyleSheet.create({
         fontWeight: "600",
     },
     // ---- ESTILOS MODAL FIGURAS ----
-    modalBackdrop: {
-        flex: 1,
-        backgroundColor: "rgba(0,0,0,0.5)",
-        justifyContent: "center",
-        alignItems: "center",
-    },
-    modalContent: {
-        width: "85%",
-        backgroundColor: "#1F2937",
-        padding: 30,
-        borderRadius: 12,
-        alignItems: "center",
-    },
-    modalTitle: {
-        color: "white",
-        fontSize: 20,
-        fontWeight: "600",
-        marginBottom: 20,
-        textAlign: "center",
-    },
     linkBtn: {
         marginBottom: 10,
     },
@@ -409,11 +411,7 @@ const styles = StyleSheet.create({
         fontSize: 18,
         textDecorationLine: "underline",
     },
-    closeText: {
-        color: "#FACC15",
-        fontSize: 18,
-        fontWeight: "600",
-    },
+    
     // ---- ESTILOS DADOS ----
     rollBtn: {
         marginTop: 20,
@@ -465,6 +463,65 @@ const styles = StyleSheet.create({
 
     diceLocked: {
         borderColor: "#FACC15",
+    },
+    /* ---- MODAL CONFIRMACIÓN ---- */
+    modalBackdrop: {
+        flex: 1,
+        backgroundColor: "rgba(0,0,0,0.5)",
+        justifyContent: "center",
+        alignItems: "center",
+    },
+    modalContent: {
+        width: "85%",
+        backgroundColor: "#1F2937",
+        padding: 30,
+        borderRadius: 12,
+        alignItems: "center",
+    },
+    modalTitle: {
+        color: "white",
+        fontSize: 20,
+        fontWeight: "600",
+        marginBottom: 20,
+        textAlign: "center",
+    },
+    modalText: {
+        color: "#9CA3AF",
+        fontSize: 16,
+        textAlign: "center",
+        marginBottom: 10,
+    },
+    modalFaces: {
+        color: "white",
+        fontSize: 18,
+        fontWeight: "600",
+        textAlign: "center",
+        marginBottom: 15,
+    },
+    modalPoints: {
+        color: "#FACC15",
+        fontSize: 18,
+        fontWeight: "700",
+        marginBottom: 25,
+    },
+    modalConfirmBtn: {
+        backgroundColor: "#FACC15",
+        paddingVertical: 14,
+        paddingHorizontal: 40,
+        borderRadius: 10,
+        marginBottom: 20,
+    },
+    modalConfirmText: {
+        fontSize: 18,
+        fontWeight: "700",
+        color: "#1F2937",
+    },
+    cancelBtn: {
+        marginTop: 5,
+    },
+    cancelText: {
+        color: "#F87171",
+        fontSize: 18,
     },
 
 
