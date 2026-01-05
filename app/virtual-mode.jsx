@@ -80,12 +80,72 @@ const VirtualMode = () => {
     const lockDices = (index) => {
         if (isRolling || !diceResults[index].face) return;
 
-        setDiceResults((prev) =>
-            prev.map((die, i) =>
-                i === index ? { ...die, locked: !die.locked } : die
-            )
-        );
+        // Si todavía quedan tiradas, se puede seleccionar libremente
+        if (rollsLeft > 0) {
+            setDiceResults(prev =>
+                prev.map((die, i) =>
+                    i === index ? { ...die, locked: !die.locked } : die
+                )
+            );
+            return;
+        }
+
+        // ⛔ A partir de aquí: rollsLeft === 0 (fase de anotación)
+
+        const clickedDie = diceResults[index];
+        const clickedFace = clickedDie.face;
+
+        // Dados ya seleccionados (locked)
+        const selectedDice = diceResults.filter(d => d.locked);
+
+        // Si estamos deseleccionando, siempre permitimos
+        if (clickedDie.locked) {
+            setDiceResults(prev =>
+                prev.map((die, i) =>
+                    i === index ? { ...die, locked: false } : die
+                )
+            );
+            return;
+        }
+
+        // Figuras seleccionadas (sin contar Áses)
+        const selectedNonAces = selectedDice
+            .map(d => d.face)
+            .filter(face => face.id !== 6);
+
+        // Caso 1️⃣: no hay ninguna figura aún → permitimos
+        if (selectedNonAces.length === 0) {
+            setDiceResults(prev =>
+                prev.map((die, i) =>
+                    i === index ? { ...die, locked: true } : die
+                )
+            );
+            return;
+        }
+
+        // Caso 2️⃣: ya hay una figura y el click es Ás → permitimos
+        if (clickedFace.id === 6) {
+            setDiceResults(prev =>
+                prev.map((die, i) =>
+                    i === index ? { ...die, locked: true } : die
+                )
+            );
+            return;
+        }
+
+        // Caso 3️⃣: ya hay una figura y el click es la MISMA figura → permitimos
+        if (clickedFace.id === selectedNonAces[0].id) {
+            setDiceResults(prev =>
+                prev.map((die, i) =>
+                    i === index ? { ...die, locked: true } : die
+                )
+            );
+            return;
+        }
+        // ❌ Caso 4: figura distinta → No ocurre nada
+
     };
+
 
     /* 🧮 Calcular puntos + preparar modal */
     const handleScoreSelection = () => {
@@ -168,7 +228,6 @@ const VirtualMode = () => {
             </Text>
 
             <TouchableOpacity
-                style={styles.linkBtn}
                 onPress={() => setFiguresModalVisible(true)}
             >
                 <Text style={styles.linkText}>
@@ -361,12 +420,6 @@ const styles = StyleSheet.create({
         marginBottom: 10,
     },
 
-    subtitle: {
-        color: "#9CA3AF",
-        fontSize: 18,
-        marginBottom: 15,
-    },
-
     /* ---- GRID COMPACTO ---- */
     grid: {
         width: "90%",
@@ -417,9 +470,8 @@ const styles = StyleSheet.create({
         alignItems: "center",
     },
 
-
     viewScoresBtn: {
-        marginBottom: 30,
+        marginBottom: 50,
         paddingVertical: 10,
         paddingHorizontal: 30,
         borderRadius: 10,
@@ -431,9 +483,6 @@ const styles = StyleSheet.create({
         fontWeight: "600",
     },
     // ---- ESTILOS MODAL FIGURAS ----
-    linkBtn: {
-        marginBottom: 10,
-    },
 
     linkText: {
         color: "#9CA3AF",
@@ -455,7 +504,6 @@ const styles = StyleSheet.create({
         color: "#1F2937",
         fontSize: 18,
         fontWeight: "700",
-        alignSelf: "center",
     },
 
     diceRow: {
@@ -473,10 +521,9 @@ const styles = StyleSheet.create({
     },
 
     rollsText: {
-        marginTop: 15,
+        marginTop: 12,
         color: "#9CA3AF",
         fontSize: 16,
-        alignSelf: "center",
     },
     textInfo: {
         color: "#FACC15",
