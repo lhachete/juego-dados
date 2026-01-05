@@ -10,7 +10,7 @@ const FiguresGrid = ({
   return (
     <View style={styles.grid}>
       {faces.map((face) => {
-        const isDisabled = disabledFaces.includes(face.id);
+        const isDisabled = disabledFaces?.includes(face.id);
         const Box = interactive ? TouchableOpacity : View;
 
         return (

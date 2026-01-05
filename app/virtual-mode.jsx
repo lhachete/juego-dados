@@ -1,6 +1,6 @@
 // virtual-mode.jsx
 import { useState, useEffect } from "react";
-import { View, Text, Image, TouchableOpacity, Modal, StyleSheet } from "react-native";
+import { View, Text, Image, TouchableOpacity, Modal, StyleSheet, Alert } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { router } from "expo-router";
 import { useGame } from "../contexts/GameContext";
@@ -23,7 +23,9 @@ const VirtualMode = () => {
         isGameStarted,
         startGame,
         addScore,
-        nextTurn
+        nextTurn,
+        usedFaces,
+        addUsedFace,
     } = useGame();
 
     const navigation = useNavigation();
@@ -149,7 +151,8 @@ const VirtualMode = () => {
 
     /* 🧮 Calcular puntos + preparar modal */
     const handleScoreSelection = () => {
-        const selected = diceResults.filter((d) => d.locked);
+        const selected = diceResults.filter(d => d.locked);
+        const used = usedFaces[currentPlayer] || [];
 
         // 👉 Caso: no ha seleccionado nada
         if (selected.length === 0) {
@@ -161,12 +164,29 @@ const VirtualMode = () => {
             return;
         }
 
-        const faces = selected.map((d) => d.face);
+        // Caras seleccionadas
+        const faces = selected.map(d => d.face);
 
-        const nonAces = faces.filter((f) => f.id !== 6);
-        const baseValue =
-            nonAces.length > 0 ? nonAces[0].id : 6;
+        // Quitamos ases para detectar la figura base
+        const nonAces = faces.filter(f => f.id !== 6);
 
+        // Figura base (si solo hay ases → as)
+        const baseFaceId = nonAces.length > 0 ? nonAces[0].id : 6;
+        const baseValue = baseFaceId;
+
+        // 🚫 Comprobación: figura ya usada
+        if (used.includes(baseFaceId)) {
+            const faceLabel =
+                nonAces.length > 0 ? nonAces[0].label : faces[0].label;
+
+            Alert.alert(
+                "Figura ya usada",
+                `Ya has anotado ${faceLabel}`
+            );
+            return;
+        }
+
+        // Cálculo de puntos
         const totalPoints = selected.length * baseValue;
 
         setScorePreview({
@@ -178,10 +198,18 @@ const VirtualMode = () => {
     };
 
 
+
     /* 🚀 Confirmar anotación (por acabar) */
     const confirmScore = () => {
         // 1️⃣ Guardar puntos (aunque sean 0)
         addScore(currentPlayer, scorePreview.total);
+
+        // 👉 Marcar figura como usada
+        if (scorePreview.faces.length > 0) {
+            const nonAces = scorePreview.faces.filter(f => f.id !== 6);
+            const faceId = nonAces.length > 0 ? nonAces[0].id : 6;
+            addUsedFace(currentPlayer, faceId);
+        }
 
         // 2️⃣ Resetear dados
         setDiceResults([]);
@@ -239,6 +267,7 @@ const VirtualMode = () => {
                 visible={figuresModalVisible}
                 onClose={() => setFiguresModalVisible(false)}
                 faces={DADES}
+                usedFaces={usedFaces[currentPlayer] || []}
             />
 
             {/* ZONA JUEGO */}

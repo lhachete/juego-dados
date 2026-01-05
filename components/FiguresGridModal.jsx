@@ -1,7 +1,7 @@
 import { Modal, View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import FiguresGrid from "./FiguresGrid";
 
-const FiguresGridModal = ({ visible, onClose, faces }) => {
+const FiguresGridModal = ({ visible, onClose, faces, usedFaces }) => {
     return (
         <Modal transparent visible={visible} animationType="fade">
             <View style={styles.modalBackdrop}>
@@ -10,6 +10,7 @@ const FiguresGridModal = ({ visible, onClose, faces }) => {
 
                     <FiguresGrid
                         faces={faces}
+                        disabledFaces={usedFaces}
                         interactive={false}
                         variant="compact"
                     />

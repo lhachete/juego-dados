@@ -15,14 +15,23 @@ export const GameProvider = ({ children }) => {
   // índice actual de la figura en segunda tanda
   const [secondPhaseStep, setSecondPhaseStep] = useState(0);
   const [isGameStarted, setIsGameStarted] = useState(false);
+  const [usedFaces, setUsedFaces] = useState({}); // { jugador1: [idFigura, idFigura], jugador2: [...] }
   const TOTAL_ROUNDS = 12;
 
   const startGame = () => {
-    const initialScores = {};
-    players.forEach(p => initialScores[p] = 0);
-    setScores(initialScores);
-    setIsGameStarted(true);
-  };
+  const initialScores = {};
+  const initialUsedFaces = {};
+
+  players.forEach(p => {
+    initialScores[p] = 0;
+    initialUsedFaces[p] = [];
+  });
+
+  setScores(initialScores);
+  setUsedFaces(initialUsedFaces);
+  setIsGameStarted(true);
+};
+
 
   const resetRoundState = () => {
     setTurn(0);
@@ -67,16 +76,29 @@ export const GameProvider = ({ children }) => {
   };
 
   const nextTurn = () => {
-    setTurn(prevTurn => {
-      if (prevTurn + 1 < players.length) {
-        return prevTurn + 1;
-      } else {
-        // Nueva ronda
-        setRound(prevRound => prevRound + 1);
-        return 0;
-      }
-    });
-  };
+  setTurn(prevTurn => {
+    if (prevTurn + 1 < players.length) {
+      return prevTurn + 1;
+    } else {
+      setRound(prevRound => prevRound + 1);
+      return 0;
+    }
+  });
+};
+
+const addUsedFace = (player, faceId) => {
+  setUsedFaces(prev => {
+    const prevFaces = prev[player] || [];
+
+    // evitar duplicados
+    if (prevFaces.includes(faceId)) return prev;
+
+    return {
+      ...prev,
+      [player]: [...prevFaces, faceId], // 👈 NUEVA referencia
+    };
+  });
+};
 
 
   return (
@@ -93,6 +115,8 @@ export const GameProvider = ({ children }) => {
         setScores,
         scoresModalVisible,
         setScoresModalVisible,
+        usedFaces,
+        addUsedFace,
         addScore,
         nextTurn,
 
