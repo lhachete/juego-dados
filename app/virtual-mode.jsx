@@ -8,6 +8,7 @@ import ScoresModal from "../components/ScoresModal";
 import ExitGameModal from "../components/ExitGameModal";
 import FiguresGridModal from "../components/FiguresGridModal";
 import DADES from "./dades.jsx";
+import FiguresGrid from "components/FiguresGrid";
 
 const VirtualMode = () => {
     const {
@@ -34,6 +35,7 @@ const VirtualMode = () => {
     const [exitModalVisible, setExitModalVisible] = useState(false);
     const [figuresModalVisible, setFiguresModalVisible] = useState(false);
     const [confirmModalVisible, setConfirmModalVisible] = useState(false);
+    const [zeroFaceSelected, setZeroFaceSelected] = useState(null);
 
     const [diceResults, setDiceResults] = useState([]);
     const [isRolling, setIsRolling] = useState(false);
@@ -199,36 +201,44 @@ const VirtualMode = () => {
 
 
 
-    /* 🚀 Confirmar anotación (por acabar) */
+    /* 🚀 Confirmar anotación */
     const confirmScore = () => {
-        // 1️⃣ Guardar puntos (aunque sean 0)
-        addScore(currentPlayer, scorePreview.total);
+        // CASO 0 PUNTOS
+        if (scorePreview.faces.length === 0) {
+            if (!zeroFaceSelected) {
+                Alert.alert("Selecciona una figura");
+                return;
+            }
 
-        // 👉 Marcar figura como usada
-        if (scorePreview.faces.length > 0) {
+            addUsedFace(currentPlayer, zeroFaceSelected.id);
+            addScore(currentPlayer, 0);
+
+            setZeroFaceSelected(null);
+        } else {
+            // flujo normal
+            addScore(currentPlayer, scorePreview.total);
+
             const nonAces = scorePreview.faces.filter(f => f.id !== 6);
             const faceId = nonAces.length > 0 ? nonAces[0].id : 6;
             addUsedFace(currentPlayer, faceId);
         }
 
-        // 2️⃣ Resetear dados
         setDiceResults([]);
-
-        // 3️⃣ Resetear tiradas
         setRollsLeft(3);
-
-        // 4️⃣ Cerrar modal
         setConfirmModalVisible(false);
-
-        // 5️⃣ Pasar turno
         nextTurn();
     };
-
-
 
     useEffect(() => {
         if (!isGameStarted) startGame();
     }, []);
+
+    useEffect(() => {
+        if (!confirmModalVisible) {
+            setZeroFaceSelected(null);
+        }
+    }, [confirmModalVisible]);
+
 
     useEffect(() => {
         const unsubscribe = navigation.addListener("beforeRemove", (e) => {
@@ -338,9 +348,21 @@ const VirtualMode = () => {
                         </Text>
 
                         {scorePreview.faces.length === 0 ? (
-                            <Text style={styles.modalText}>
-                                No has seleccionado ningún dado
-                            </Text>
+                            <>
+                                <Text style={styles.modalText}>
+                                    No has seleccionado ningún dado.
+                                    Elige una figura para descartar:
+                                </Text>
+
+                                <FiguresGrid
+                                    faces={DADES}
+                                    disabledFaces={usedFaces[currentPlayer] || []}
+                                    interactive
+                                    variant="compact"
+                                    onFacePress={setZeroFaceSelected}
+                                    selectedFaceId={zeroFaceSelected?.id}
+                                />
+                            </>
                         ) : (
                             <>
                                 <Text style={styles.modalText}>
@@ -360,13 +382,20 @@ const VirtualMode = () => {
 
                         {/* CONFIRMAR */}
                         <TouchableOpacity
-                            style={styles.modalConfirmBtn}
+                            style={[
+                                styles.modalConfirmBtn,
+                                scorePreview.faces.length === 0 &&
+                                !zeroFaceSelected &&
+                                styles.disabledBtn
+                            ]}
+                            disabled={scorePreview.faces.length === 0 && !zeroFaceSelected}
                             onPress={confirmScore}
                         >
                             <Text style={styles.modalConfirmText}>
                                 Confirmar
                             </Text>
                         </TouchableOpacity>
+
 
                         {/* CANCELAR */}
                         <TouchableOpacity
@@ -628,6 +657,9 @@ const styles = StyleSheet.create({
         color: "#F87171",
         fontSize: 18,
     },
+    disabledBtn: {
+        opacity: 0.4,
+    }
 
 
 });

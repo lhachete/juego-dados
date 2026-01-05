@@ -6,11 +6,13 @@ const FiguresGrid = ({
   interactive = false,
   onFacePress,
   variant = "manual", // 👈 por defecto manual
+  selectedFaceId
 }) => {
   return (
     <View style={styles.grid}>
       {faces.map((face) => {
         const isDisabled = disabledFaces?.includes(face.id);
+        const isSelected = selectedFaceId === face.id;
         const Box = interactive ? TouchableOpacity : View;
 
         return (
@@ -20,6 +22,7 @@ const FiguresGrid = ({
               styles.faceBox,
               styles[variant],
               isDisabled && styles.faceDisabled,
+              isSelected && styles.faceSelected,
             ]}
             onPress={
               interactive && !isDisabled
@@ -94,4 +97,9 @@ const styles = StyleSheet.create({
     width: "80%",
     height: "80%",
   },
+  faceSelected: {
+    borderWidth: 2,
+    borderColor: "#FFD700", // dorado
+  },
+
 });
