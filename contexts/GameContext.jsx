@@ -14,24 +14,33 @@ export const GameProvider = ({ children }) => {
   const [secondPhaseOrder, setSecondPhaseOrder] = useState([]);
   // índice actual de la figura en segunda tanda
   const [secondPhaseStep, setSecondPhaseStep] = useState(0);
+
   const [isGameStarted, setIsGameStarted] = useState(false);
   const [gamePhase, setGamePhase] = useState("first"); // "first" | "second" | "finished"
+
+  const [disabledFaces, setDisabledFaces] = useState({});
   const [usedFaces, setUsedFaces] = useState({}); // { jugador1: [idFigura, idFigura], jugador2: [...] }
   const TOTAL_ROUNDS = 12;
 
   const startGame = () => {
-  const initialScores = {};
-  const initialUsedFaces = {};
+    const initialScores = {};
+    const initialUsedFaces = {};
+    const initialDisabled = {};
 
-  players.forEach(p => {
-    initialScores[p] = 0;
-    initialUsedFaces[p] = [];
-  });
+    players.forEach(p => {
+      initialScores[p] = 0;
+      initialUsedFaces[p] = [];
+    });
 
-  setScores(initialScores);
-  setUsedFaces(initialUsedFaces);
-  setIsGameStarted(true);
-};
+    players.forEach(p => {
+      initialDisabled[p] = [];
+    });
+
+    setDisabledFaces(initialDisabled);
+    setScores(initialScores);
+    setUsedFaces(initialUsedFaces);
+    setIsGameStarted(true);
+  };
 
 
   const resetRoundState = () => {
@@ -78,61 +87,117 @@ export const GameProvider = ({ children }) => {
   };
 
   const nextTurn = () => {
-  setTurn(prevTurn => {
-    if (prevTurn + 1 < players.length) {
-      return prevTurn + 1;
+    setTurn(prevTurn => {
+      if (prevTurn + 1 < players.length) {
+        return prevTurn + 1;
+      } else {
+        setRound(prevRound => {
+          const nextRound = prevRound + 1;
+
+          // 🔥 cambio de fase
+          if (nextRound === 7) {
+            setGamePhase("second");
+          }
+
+          return nextRound;
+        });
+        return 0;
+      }
+    });
+  };
+
+  const addUsedFace = (player, faceId) => {
+    setUsedFaces(prev => {
+      const prevFaces = prev[player] || [];
+
+      // evitar duplicados
+      if (prevFaces.includes(faceId)) return prev;
+
+      return {
+        ...prev,
+        [player]: [...prevFaces, faceId], // 👈 NUEVA referencia
+      };
+    });
+  };
+
+  // Segunda fase - establecer orden y caras deshabilitadas
+  const startSecondPhase = (type) => {
+    let order = [];
+
+    if (type === "negras") {
+      order = DADES.map(f => f.id).sort((a, b) => a - b);
     } else {
-      setRound(prevRound => {
-        const nextRound = prevRound + 1;
-
-        // 🔥 cambio de fase
-        if (nextRound === 7) {
-          setGamePhase("second");
-        }
-
-        return nextRound;
-      });
-      return 0;
+      order = DADES.map(f => f.id).sort((a, b) => b - a);
     }
-  });
-};
 
-const addUsedFace = (player, faceId) => {
-  setUsedFaces(prev => {
-    const prevFaces = prev[player] || [];
+    setSecondPhaseOrder(order);
+    setSecondPhaseStep(0);
 
-    // evitar duplicados
-    if (prevFaces.includes(faceId)) return prev;
+    const firstId = order[0];
+    const updated = {};
 
-    return {
-      ...prev,
-      [player]: [...prevFaces, faceId], // 👈 NUEVA referencia
-    };
-  });
-};
+    players.forEach(p => {
+      updated[p] = DADES
+        .map(f => f.id)
+        .filter(id => id !== firstId);
+    });
 
-// Segunda fase - establecer orden y caras deshabilitadas //!PELIGRO REVISAR BIEN
-const startSecondPhase = (type, setDisabledFaces) => {
-  let order = [];
+    setDisabledFaces(updated);
+  };
 
-  if (type === "negras") {
-    order = DADES.map(f => f.id).sort((a, b) => a - b);
-  } else {
-    order = DADES.map(f => f.id).sort((a, b) => b - a);
-  }
+  // Estado de caras deshabilitadas en segunda fase
+  const advanceSecondPhase = () => {
+    const nextStep = secondPhaseStep + 1;
 
-  setSecondPhaseOrder(order);
-  setSecondPhaseStep(0);
+    if (nextStep >= secondPhaseOrder.length) {
+      return;
+    }
 
-  const firstId = order[0];
-  const updated = {};
+    const nextFigureId = secondPhaseOrder[nextStep];
 
-  players.forEach(p => {
-    updated[p] = DADES.map(f => f.id).filter(id => id !== firstId);
-  });
+    const updated = {};
+    players.forEach(p => {
+      updated[p] = DADES
+        .map(f => f.id)
+        .filter(id => id !== nextFigureId);
+    });
 
-  setDisabledFaces(updated);
-};
+    setDisabledFaces(updated);
+    setSecondPhaseStep(nextStep);
+  };
+
+
+
+
+  //>>> Avanzar el juego (turno y ronda).
+  const advanceGame = () => {
+    // ¿último jugador de la ronda?
+    if (turn === players.length - 1) {
+
+      // ¿última ronda?
+      if (round === TOTAL_ROUNDS) {
+        setGamePhase("finished");
+        return;
+      }
+
+      const nextRound = round + 1;
+      setRound(nextRound);
+      setTurn(0);
+
+      if (gamePhase === "second") {
+        advanceSecondPhase();
+      }
+
+      // 🔥 entrada a segunda fase
+      if (nextRound === 7) {
+        setGamePhase("second");
+      }
+
+    } else {
+      // siguiente jugador normal
+      setTurn(prev => prev + 1);
+    }
+  };
 
 
 
@@ -150,12 +215,15 @@ const startSecondPhase = (type, setDisabledFaces) => {
         setScores,
         scoresModalVisible,
         setScoresModalVisible,
+        disabledFaces,
+        setDisabledFaces,
         usedFaces,
         addUsedFace,
         addScore,
         nextTurn,
         startSecondPhase,
         gamePhase,
+        advanceGame,
 
         turn, setTurn,
         round, setRound,

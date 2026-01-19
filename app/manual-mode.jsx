@@ -10,10 +10,9 @@ import FiguresGrid from "../components/FiguresGrid";
 import DADES from "./dades.jsx";
 
 const ManualMode = () => {
-    const { players, scores, setScores, turn, setTurn, round, setRound, TOTAL_ROUNDS,
-        secondPhaseOrder, secondPhaseStep, setSecondPhaseStep,
+    const { players, scores, setScores, turn, round, TOTAL_ROUNDS,
         scoresModalVisible, setScoresModalVisible, exitGame, finishGame, isGameStarted,
-        startGame, resetGame, startSecondPhase, gamePhase
+        startGame, resetGame, disabledFaces, setDisabledFaces, startSecondPhase, gamePhase, advanceGame
     } = useGame();
     const [selectedFace, setSelectedFace] = useState(null);
     const [modalVisible, setModalVisible] = useState(false);
@@ -21,14 +20,6 @@ const ManualMode = () => {
     const [selectedCount, setSelectedCount] = useState(null);
     const [phaseModalVisible, setPhaseModalVisible] = useState(false);
     const navigation = useNavigation();
-
-
-    const [disabledFaces, setDisabledFaces] = useState(
-        players.reduce((acc, player) => {
-            acc[player] = []; // cada jugador empieza sin figuras bloqueadas
-            return acc;
-        }, {})
-    );
 
     const currentPlayer = players[turn];
 
@@ -58,55 +49,9 @@ const ManualMode = () => {
         });
 
         setModalVisible(false);
-
-        // Cambiar turno
-        if (turn === players.length - 1) {
-
-            if (round === TOTAL_ROUNDS) {
-                resetGame();
-                finishGame();
-                router.replace("/end-game");
-                return;
-            } else {
-                // Avanzar ronda
-                const nextRound = round + 1;
-                setRound(nextRound);
-            }
-
-            // --- SI ESTAMOS EN SEGUNDA TANDA ---
-            if (round >= 7) {
-                const nextStep = secondPhaseStep + 1;
-
-                // Si quedan figuras por completar
-                if (nextStep < secondPhaseOrder.length) {
-                    setSecondPhaseStep(nextStep);
-                    const nextFaceId = secondPhaseOrder[nextStep];
-                    // habilitar SOLO ESTA figura para todos
-                    const updated = {};
-                    players.forEach(p => {
-                        updated[p] = DADES.map(f => f.id).filter(id => id !== nextFaceId);
-                    });
-                    setDisabledFaces(updated);
-                }
-
-            } else {
-                // --- PRIMERA TANDA NORMAL ---
-                const nextRound = round + 1;
-                setRound(nextRound);
-                //!! ESTA ES LA CONDICIÓN PARA MOSTRAR EL MODAL DE SEGUNDA FASE QUE HAY QUE REEMPLAZAR CON LA NUEVA
-                if (nextRound === 7) {
-                    setPhaseModalVisible(true);
-                }
-            }
-            setTurn(0);
-
-        } else {
-            // siguiente jugador normal
-            setTurn(turn + 1);
-        }
-
         setSelectedFace(null);
         setSelectedCount(null);
+        advanceGame();
     };
 
 
@@ -128,10 +73,14 @@ const ManualMode = () => {
         return unsubscribe;
     }, [navigation, isGameStarted]);
 
-    // Mostrar modal especial al entrar en segunda fase
+    // Mostrar modal especial al entrar en segunda fase o finalizar juego, según la fase (gamePhase).
     useEffect(() => {
         if (gamePhase === "second") {
             setPhaseModalVisible(true);
+        } else if (gamePhase === "finished") {
+            resetGame();
+            finishGame();
+            router.replace("/end-game");
         }
     }, [gamePhase]);
 
@@ -228,7 +177,7 @@ const ManualMode = () => {
                 players={players}
                 scores={scores}
                 onSelect={(type) => {
-                    startSecondPhase(type, setDisabledFaces);
+                    startSecondPhase(type);
                     setPhaseModalVisible(false);
                 }}
             />
