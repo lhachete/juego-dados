@@ -1,4 +1,3 @@
-// virtual-mode.jsx
 import { useState, useEffect } from "react";
 import { View, Text, Image, TouchableOpacity, Modal, StyleSheet, Alert } from "react-native";
 import { useNavigation } from "@react-navigation/native";
@@ -28,22 +27,19 @@ const VirtualMode = () => {
         nextTurn,
         usedFaces,
         addUsedFace,
-        secondPhaseOrder,
-        secondPhaseStep,
         startSecondPhase,
+        gamePhase
     } = useGame();
 
     const navigation = useNavigation();
     const currentPlayer = players[turn];
 
-
-
     const [exitModalVisible, setExitModalVisible] = useState(false);
     const [figuresModalVisible, setFiguresModalVisible] = useState(false);
     const [confirmModalVisible, setConfirmModalVisible] = useState(false);
     const [phaseModalVisible, setPhaseModalVisible] = useState(false);
-
     const [zeroFaceSelected, setZeroFaceSelected] = useState(null);
+
     const [diceResults, setDiceResults] = useState([]);
     const [isRolling, setIsRolling] = useState(false);
     const [rollsLeft, setRollsLeft] = useState(3);
@@ -51,13 +47,6 @@ const VirtualMode = () => {
         faces: [],
         total: 0,
     });
-    const [disabledFaces, setDisabledFaces] = useState(
-        players.reduce((acc, player) => {
-            acc[player] = [];
-            return acc;
-        }, {})
-    );
-
 
     /* 🎲 Tirar dados */
     const rollDice = async () => {
@@ -240,13 +229,7 @@ const VirtualMode = () => {
         setDiceResults([]);
         setRollsLeft(3);
         setConfirmModalVisible(false);
-        const currentRound = round;
         nextTurn();
-
-        // 👇 SI ACABAMOS DE ENTRAR EN RONDA 7
-        if (currentRound === 6) {
-            setPhaseModalVisible(true);
-        }
     };
 
     useEffect(() => {
@@ -259,23 +242,7 @@ const VirtualMode = () => {
         }
     }, [confirmModalVisible]);
 
-    // Actualizar caras deshabilitadas en segunda fase
-    useEffect(() => {
-        if (round < 7) return;
-        if (secondPhaseOrder.length === 0) return;
 
-        const nextFaceId = secondPhaseOrder[secondPhaseStep];
-
-        const updated = {};
-        players.forEach(p => {
-            updated[p] = DADES.map(f => f.id).filter(id => id !== nextFaceId);
-        });
-
-        setDisabledFaces(updated);
-    }, [secondPhaseStep]);
-
-
-    // Manejo botón atrás (salir/terminar partida)
     useEffect(() => {
         const unsubscribe = navigation.addListener("beforeRemove", (e) => {
             if (!isGameStarted) return;
@@ -285,6 +252,12 @@ const VirtualMode = () => {
 
         return unsubscribe;
     }, [navigation, isGameStarted]);
+
+    useEffect(() => {
+        if (gamePhase === "second") {
+            setPhaseModalVisible(true);
+        }
+    }, [gamePhase]);
 
     return (
         <View style={styles.container}>
@@ -392,11 +365,7 @@ const VirtualMode = () => {
 
                                 <FiguresGrid
                                     faces={DADES}
-                                    disabledFaces={
-                                        round >= 7
-                                            ? disabledFaces[currentPlayer]
-                                            : usedFaces[currentPlayer] || []
-                                    }
+                                    disabledFaces={usedFaces[currentPlayer] || []}
                                     interactive
                                     variant="compact"
                                     onFacePress={setZeroFaceSelected}
@@ -461,22 +430,23 @@ const VirtualMode = () => {
                 </Text>
             </TouchableOpacity>
 
-            <SecondPhaseModal
-                visible={phaseModalVisible}
-                players={players}
-                scores={scores}
-                onSelect={(type) => {
-                    startSecondPhase(type, setDisabledFaces);
-                    setPhaseModalVisible(false);
-                }}
-            />
-
             <ScoresModal
                 visible={scoresModalVisible}
                 players={players}
                 scores={scores}
                 onClose={() => setScoresModalVisible(false)}
             />
+
+            <SecondPhaseModal
+                visible={phaseModalVisible}
+                players={players}
+                scores={scores}
+                onSelect={(type) => { //TODO POR TERMINAR!! setDisabledFaces no existe <<<<<<<<<<<<<<
+                    startSecondPhase(type, setDisabledFaces);
+                    setPhaseModalVisible(false);
+                }}
+            />
+
 
             <ExitGameModal
                 visible={exitModalVisible}

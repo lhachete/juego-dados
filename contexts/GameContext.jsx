@@ -1,6 +1,5 @@
 import { createContext, useContext, useState } from "react";
-import DADES from "app/dades";
-
+import DADES from "../app/dades.jsx"; // ajusta ruta si hace falta
 const GameContext = createContext();
 
 export const GameProvider = ({ children }) => {
@@ -16,22 +15,23 @@ export const GameProvider = ({ children }) => {
   // índice actual de la figura en segunda tanda
   const [secondPhaseStep, setSecondPhaseStep] = useState(0);
   const [isGameStarted, setIsGameStarted] = useState(false);
+  const [gamePhase, setGamePhase] = useState("first"); // "first" | "second" | "finished"
   const [usedFaces, setUsedFaces] = useState({}); // { jugador1: [idFigura, idFigura], jugador2: [...] }
   const TOTAL_ROUNDS = 12;
 
   const startGame = () => {
-    const initialScores = {};
-    const initialUsedFaces = {};
+  const initialScores = {};
+  const initialUsedFaces = {};
 
-    players.forEach(p => {
-      initialScores[p] = 0;
-      initialUsedFaces[p] = [];
-    });
+  players.forEach(p => {
+    initialScores[p] = 0;
+    initialUsedFaces[p] = [];
+  });
 
-    setScores(initialScores);
-    setUsedFaces(initialUsedFaces);
-    setIsGameStarted(true);
-  };
+  setScores(initialScores);
+  setUsedFaces(initialUsedFaces);
+  setIsGameStarted(true);
+};
 
 
   const resetRoundState = () => {
@@ -40,6 +40,7 @@ export const GameProvider = ({ children }) => {
     setScores({});
     setSecondPhaseOrder([]);
     setSecondPhaseStep(0);
+    setGamePhase("first");
   };
 
   const resetWholeGame = () => {
@@ -68,27 +69,6 @@ export const GameProvider = ({ children }) => {
     setIsGameStarted(false);
   };
 
-  
-  const startSecondPhase = (type, setDisabledFaces) => {
-  const order =
-    type === "as"
-      ? [6, 5, 4, 3, 2, 1]
-      : [1, 2, 3, 4, 5, 6];
-
-  setSecondPhaseOrder(order);
-  setSecondPhaseStep(0);
-
-  const firstId = order[0];
-  const updated = {};
-  players.forEach(p => {
-    updated[p] = order.filter(id => id !== firstId);
-  });
-
-  setDisabledFaces(updated);
-};
-
-
-
   //virtual-mode
   const addScore = (player, points) => {
     setScores(prev => ({
@@ -98,29 +78,62 @@ export const GameProvider = ({ children }) => {
   };
 
   const nextTurn = () => {
-    setTurn(prevTurn => {
-      if (prevTurn + 1 < players.length) {
-        return prevTurn + 1;
-      } else {
-        setRound(prevRound => prevRound + 1);
-        return 0;
-      }
-    });
-  };
+  setTurn(prevTurn => {
+    if (prevTurn + 1 < players.length) {
+      return prevTurn + 1;
+    } else {
+      setRound(prevRound => {
+        const nextRound = prevRound + 1;
 
-  const addUsedFace = (player, faceId) => {
-    setUsedFaces(prev => {
-      const prevFaces = prev[player] || [];
+        // 🔥 cambio de fase
+        if (nextRound === 7) {
+          setGamePhase("second");
+        }
 
-      // evitar duplicados
-      if (prevFaces.includes(faceId)) return prev;
+        return nextRound;
+      });
+      return 0;
+    }
+  });
+};
 
-      return {
-        ...prev,
-        [player]: [...prevFaces, faceId], // 👈 NUEVA referencia
-      };
-    });
-  };
+const addUsedFace = (player, faceId) => {
+  setUsedFaces(prev => {
+    const prevFaces = prev[player] || [];
+
+    // evitar duplicados
+    if (prevFaces.includes(faceId)) return prev;
+
+    return {
+      ...prev,
+      [player]: [...prevFaces, faceId], // 👈 NUEVA referencia
+    };
+  });
+};
+
+// Segunda fase - establecer orden y caras deshabilitadas //!PELIGRO REVISAR BIEN
+const startSecondPhase = (type, setDisabledFaces) => {
+  let order = [];
+
+  if (type === "negras") {
+    order = DADES.map(f => f.id).sort((a, b) => a - b);
+  } else {
+    order = DADES.map(f => f.id).sort((a, b) => b - a);
+  }
+
+  setSecondPhaseOrder(order);
+  setSecondPhaseStep(0);
+
+  const firstId = order[0];
+  const updated = {};
+
+  players.forEach(p => {
+    updated[p] = DADES.map(f => f.id).filter(id => id !== firstId);
+  });
+
+  setDisabledFaces(updated);
+};
+
 
 
   return (
@@ -141,10 +154,11 @@ export const GameProvider = ({ children }) => {
         addUsedFace,
         addScore,
         nextTurn,
+        startSecondPhase,
+        gamePhase,
 
         turn, setTurn,
         round, setRound,
-        startSecondPhase,
         secondPhaseOrder, setSecondPhaseOrder,
         secondPhaseStep, setSecondPhaseStep,
         resetRoundState,

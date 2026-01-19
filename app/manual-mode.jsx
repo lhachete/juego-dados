@@ -11,9 +11,9 @@ import DADES from "./dades.jsx";
 
 const ManualMode = () => {
     const { players, scores, setScores, turn, setTurn, round, setRound, TOTAL_ROUNDS,
-        startSecondPhase, secondPhaseOrder, setSecondPhaseOrder, secondPhaseStep, setSecondPhaseStep,
+        secondPhaseOrder, secondPhaseStep, setSecondPhaseStep,
         scoresModalVisible, setScoresModalVisible, exitGame, finishGame, isGameStarted,
-        startGame, resetGame,
+        startGame, resetGame, startSecondPhase, gamePhase
     } = useGame();
     const [selectedFace, setSelectedFace] = useState(null);
     const [modalVisible, setModalVisible] = useState(false);
@@ -93,6 +93,7 @@ const ManualMode = () => {
                 // --- PRIMERA TANDA NORMAL ---
                 const nextRound = round + 1;
                 setRound(nextRound);
+                //!! ESTA ES LA CONDICIÓN PARA MOSTRAR EL MODAL DE SEGUNDA FASE QUE HAY QUE REEMPLAZAR CON LA NUEVA
                 if (nextRound === 7) {
                     setPhaseModalVisible(true);
                 }
@@ -107,6 +108,7 @@ const ManualMode = () => {
         setSelectedFace(null);
         setSelectedCount(null);
     };
+
 
     // Iniciar el juego al montar el componente
     useEffect(() => {
@@ -125,6 +127,13 @@ const ManualMode = () => {
 
         return unsubscribe;
     }, [navigation, isGameStarted]);
+
+    // Mostrar modal especial al entrar en segunda fase
+    useEffect(() => {
+        if (gamePhase === "second") {
+            setPhaseModalVisible(true);
+        }
+    }, [gamePhase]);
 
 
 
@@ -259,6 +268,7 @@ const ManualMode = () => {
 };
 
 export default ManualMode;
+
 
 const styles = StyleSheet.create({
     container: {
