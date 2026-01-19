@@ -11,7 +11,7 @@ import DADES from "./dades.jsx";
 
 const ManualMode = () => {
     const { players, scores, setScores, turn, setTurn, round, setRound, TOTAL_ROUNDS,
-        secondPhaseOrder, setSecondPhaseOrder, secondPhaseStep, setSecondPhaseStep,
+        startSecondPhase, secondPhaseOrder, setSecondPhaseOrder, secondPhaseStep, setSecondPhaseStep,
         scoresModalVisible, setScoresModalVisible, exitGame, finishGame, isGameStarted,
         startGame, resetGame,
     } = useGame();
@@ -108,29 +108,6 @@ const ManualMode = () => {
         setSelectedCount(null);
     };
 
-    const handleSecondPhaseSelect = (type) => {
-        // Determinar orden según elección
-        let order = [];
-        if (type === "negras") {
-            // ascendente del 1 al 6
-            order = DADES.map(f => f.id).sort((a, b) => a - b);
-        } else {
-            // descendente del 6 al 1
-            order = DADES.map(f => f.id).sort((a, b) => b - a);
-        }
-        setSecondPhaseOrder(order);
-        setSecondPhaseStep(0); // Comenzar por la primera del orden
-
-        // Reiniciar disabledFaces dejando todas figuras bloqueadas excepto la primera de la orden.
-        const firstId = order[0];
-        const updated = {};
-        players.forEach(p => {
-            updated[p] = DADES.map(f => f.id).filter(id => id !== firstId);
-        });
-        setDisabledFaces(updated);
-        setPhaseModalVisible(false);
-    };
-
     // Iniciar el juego al montar el componente
     useEffect(() => {
         if (!isGameStarted) {
@@ -161,12 +138,12 @@ const ManualMode = () => {
 
             {/* GRID DE FIGURAS */}
             <FiguresGrid
-  faces={DADES}
-  disabledFaces={disabledFaces[currentPlayer]}
-  interactive={true}
-  onFacePress={handleFacePress}
-  variant="manual"
-/>
+                faces={DADES}
+                disabledFaces={disabledFaces[currentPlayer]}
+                interactive={true}
+                onFacePress={handleFacePress}
+                variant="manual"
+            />
 
 
 
@@ -241,7 +218,10 @@ const ManualMode = () => {
                 visible={phaseModalVisible}
                 players={players}
                 scores={scores}
-                onSelect={handleSecondPhaseSelect}
+                onSelect={(type) => {
+                    startSecondPhase(type, setDisabledFaces);
+                    setPhaseModalVisible(false);
+                }}
             />
 
             {/* ---- MODAL PUNTUACIONES TOTALES ---- */}

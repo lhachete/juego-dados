@@ -1,4 +1,5 @@
 import { createContext, useContext, useState } from "react";
+import DADES from "app/dades";
 
 const GameContext = createContext();
 
@@ -19,18 +20,18 @@ export const GameProvider = ({ children }) => {
   const TOTAL_ROUNDS = 12;
 
   const startGame = () => {
-  const initialScores = {};
-  const initialUsedFaces = {};
+    const initialScores = {};
+    const initialUsedFaces = {};
 
-  players.forEach(p => {
-    initialScores[p] = 0;
-    initialUsedFaces[p] = [];
-  });
+    players.forEach(p => {
+      initialScores[p] = 0;
+      initialUsedFaces[p] = [];
+    });
 
-  setScores(initialScores);
-  setUsedFaces(initialUsedFaces);
-  setIsGameStarted(true);
-};
+    setScores(initialScores);
+    setUsedFaces(initialUsedFaces);
+    setIsGameStarted(true);
+  };
 
 
   const resetRoundState = () => {
@@ -67,6 +68,27 @@ export const GameProvider = ({ children }) => {
     setIsGameStarted(false);
   };
 
+  
+  const startSecondPhase = (type, setDisabledFaces) => {
+  const order =
+    type === "as"
+      ? [6, 5, 4, 3, 2, 1]
+      : [1, 2, 3, 4, 5, 6];
+
+  setSecondPhaseOrder(order);
+  setSecondPhaseStep(0);
+
+  const firstId = order[0];
+  const updated = {};
+  players.forEach(p => {
+    updated[p] = order.filter(id => id !== firstId);
+  });
+
+  setDisabledFaces(updated);
+};
+
+
+
   //virtual-mode
   const addScore = (player, points) => {
     setScores(prev => ({
@@ -76,29 +98,29 @@ export const GameProvider = ({ children }) => {
   };
 
   const nextTurn = () => {
-  setTurn(prevTurn => {
-    if (prevTurn + 1 < players.length) {
-      return prevTurn + 1;
-    } else {
-      setRound(prevRound => prevRound + 1);
-      return 0;
-    }
-  });
-};
+    setTurn(prevTurn => {
+      if (prevTurn + 1 < players.length) {
+        return prevTurn + 1;
+      } else {
+        setRound(prevRound => prevRound + 1);
+        return 0;
+      }
+    });
+  };
 
-const addUsedFace = (player, faceId) => {
-  setUsedFaces(prev => {
-    const prevFaces = prev[player] || [];
+  const addUsedFace = (player, faceId) => {
+    setUsedFaces(prev => {
+      const prevFaces = prev[player] || [];
 
-    // evitar duplicados
-    if (prevFaces.includes(faceId)) return prev;
+      // evitar duplicados
+      if (prevFaces.includes(faceId)) return prev;
 
-    return {
-      ...prev,
-      [player]: [...prevFaces, faceId], // 👈 NUEVA referencia
-    };
-  });
-};
+      return {
+        ...prev,
+        [player]: [...prevFaces, faceId], // 👈 NUEVA referencia
+      };
+    });
+  };
 
 
   return (
@@ -122,6 +144,7 @@ const addUsedFace = (player, faceId) => {
 
         turn, setTurn,
         round, setRound,
+        startSecondPhase,
         secondPhaseOrder, setSecondPhaseOrder,
         secondPhaseStep, setSecondPhaseStep,
         resetRoundState,
