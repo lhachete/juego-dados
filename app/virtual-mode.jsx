@@ -24,11 +24,12 @@ const VirtualMode = () => {
         isGameStarted,
         startGame,
         addScore,
-        nextTurn,
+        advanceGame,
         usedFaces,
         addUsedFace,
         startSecondPhase,
-        gamePhase
+        gamePhase,
+        resetGame
     } = useGame();
 
     const navigation = useNavigation();
@@ -229,7 +230,7 @@ const VirtualMode = () => {
         setDiceResults([]);
         setRollsLeft(3);
         setConfirmModalVisible(false);
-        nextTurn();
+        advanceGame();
     };
 
     useEffect(() => {
@@ -256,6 +257,10 @@ const VirtualMode = () => {
     useEffect(() => {
         if (gamePhase === "second") {
             setPhaseModalVisible(true);
+        } else if (gamePhase === "finished") {
+            resetGame();
+            finishGame();
+            router.replace("/end-game");
         }
     }, [gamePhase]);
 
@@ -441,11 +446,12 @@ const VirtualMode = () => {
                 visible={phaseModalVisible}
                 players={players}
                 scores={scores}
-                onSelect={(type) => { //TODO POR TERMINAR!! setDisabledFaces no existe para segunda fase<<<<<<<<<<<<<<
-                    startSecondPhase(type, setDisabledFaces);
+                onSelect={(type) => {
+                    startSecondPhase(type);
                     setPhaseModalVisible(false);
                 }}
             />
+
 
 
             <ExitGameModal

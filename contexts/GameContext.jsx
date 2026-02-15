@@ -78,6 +78,8 @@ export const GameProvider = ({ children }) => {
     setIsGameStarted(false);
   };
 
+
+
   //virtual-mode
   const addScore = (player, points) => {
     setScores(prev => ({
@@ -85,26 +87,7 @@ export const GameProvider = ({ children }) => {
       [player]: (prev[player] || 0) + points,
     }));
   };
-
-  const nextTurn = () => {
-    setTurn(prevTurn => {
-      if (prevTurn + 1 < players.length) {
-        return prevTurn + 1;
-      } else {
-        setRound(prevRound => {
-          const nextRound = prevRound + 1;
-
-          // 🔥 cambio de fase
-          if (nextRound === 7) {
-            setGamePhase("second");
-          }
-
-          return nextRound;
-        });
-        return 0;
-      }
-    });
-  };
+  
 
   const addUsedFace = (player, faceId) => {
     setUsedFaces(prev => {
@@ -220,7 +203,6 @@ export const GameProvider = ({ children }) => {
         usedFaces,
         addUsedFace,
         addScore,
-        nextTurn,
         startSecondPhase,
         gamePhase,
         advanceGame,
