@@ -6,7 +6,7 @@ import Button from "../components/Button";
 
 const PlayerSelection = () => {
 
-  const { players, setPlayers, playType } = useGame();
+  const { players, setPlayers, mode, playType } = useGame();
 
   const handleAddPlayer = () => {
     if (players.length >= 10) return;
@@ -26,49 +26,55 @@ const PlayerSelection = () => {
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Selecciona los jugadores</Text>
+    <>
+      <View style={styles.container}>
+        <View style={styles.header}>
+          <Text style={styles.playType}>{playType?.toUpperCase()}</Text>
+          <Text style={styles.mode}>MODE · {mode.toUpperCase()}</Text>
+        </View>
 
-      <View style={styles.playerList}>
-        {players.map((player, index) => (
-          <View key={index} style={styles.playerRow}>
-            <TextInput
-              style={styles.input}
-              placeholder={`Jugador ${index + 1}`}
-              placeholderTextColor="#9CA3AF"
-              value={player}
-              onChangeText={(text) => handleChangeText(text, index)}
-            />
-            {players.length > 2 && <TouchableOpacity
-              onPress={() => handleRemovePlayer(index)}
-              style={styles.removeBtn}
-            >
-              <Text style={styles.removeText}>-</Text>
-            </TouchableOpacity>
+        <Text style={styles.title}>Selecciona los jugadores</Text>
+        <View style={styles.playerList}>
+          {players.map((player, index) => (
+            <View key={index} style={styles.playerRow}>
+              <TextInput
+                style={styles.input}
+                placeholder={`Jugador ${index + 1}`}
+                placeholderTextColor="#9CA3AF"
+                value={player}
+                onChangeText={(text) => handleChangeText(text, index)}
+              />
+              {players.length > 2 && <TouchableOpacity
+                onPress={() => handleRemovePlayer(index)}
+                style={styles.removeBtn}
+              >
+                <Text style={styles.removeText}>-</Text>
+              </TouchableOpacity>
+              }
+            </View>
+          ))}
+        </View>
+
+        {players.length < 10 && (
+          <Button title="Añadir jugador" onPress={handleAddPlayer} variant="outline" />
+        )}
+
+        <Button
+          title="Continuar"
+          onPress={() => {
+            const result = validatePlayers(players);
+
+            if (!result.valid) {
+              Alert.alert("Error", result.error);
+              return;
             }
-          </View>
-        ))}
+
+            router.replace(`/${playType}-mode`);
+          }}
+        />
+
       </View>
-
-      {players.length < 10 && (
-        <Button title="Añadir jugador" onPress={handleAddPlayer} variant="outline" />
-      )}
-
-      <Button
-        title="Continuar"
-        onPress={() => {
-          const result = validatePlayers(players);
-
-          if (!result.valid) {
-            Alert.alert("Error", result.error);
-            return;
-          }
-
-          router.replace(`/${playType}-mode`);
-        }}
-      />
-
-    </View>
+    </>
   );
 };
 
@@ -82,8 +88,27 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: 20,
   },
+  header: {
+    alignItems: "center",
+    marginBottom: 40,
+  },
+  playType: {
+    fontSize: 36,
+    color: "#FBBF24",
+    fontWeight: "900",
+    letterSpacing: 2,
+  },
+
+  mode: {
+    fontSize: 16,
+    color: "#FCD34D",
+    fontWeight: "600",
+    marginTop: 6,
+    textTransform: "uppercase",
+    opacity: 0.9,
+  },
   title: {
-    fontSize: 26,
+    fontSize: 20,
     color: "white",
     fontWeight: "700",
     marginBottom: 30,
@@ -122,4 +147,5 @@ const styles = StyleSheet.create({
     fontWeight: "900",
     marginTop: -4,
   },
+
 });

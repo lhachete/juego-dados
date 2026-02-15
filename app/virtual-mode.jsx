@@ -441,7 +441,7 @@ const VirtualMode = () => {
                 visible={phaseModalVisible}
                 players={players}
                 scores={scores}
-                onSelect={(type) => { //TODO POR TERMINAR!! setDisabledFaces no existe <<<<<<<<<<<<<<
+                onSelect={(type) => { //TODO POR TERMINAR!! setDisabledFaces no existe para segunda fase<<<<<<<<<<<<<<
                     startSecondPhase(type, setDisabledFaces);
                     setPhaseModalVisible(false);
                 }}
