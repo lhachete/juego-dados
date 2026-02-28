@@ -14,11 +14,13 @@ const ManualMode = () => {
         scoresModalVisible, setScoresModalVisible, exitGame, finishGame, isGameStarted,
         startGame, resetGame, disabledFaces, setDisabledFaces, startSecondPhase, gamePhase, advanceGame
     } = useGame();
-    const [selectedFace, setSelectedFace] = useState(null);
-    const [modalVisible, setModalVisible] = useState(false);
-    const [exitModalVisible, setExitModalVisible] = useState(false);
-    const [selectedCount, setSelectedCount] = useState(null);
-    const [phaseModalVisible, setPhaseModalVisible] = useState(false);
+    const [selectedFace, setSelectedFace] = useState(null); //? Cara seleccionada del grid de figuras.
+
+    const [selectedCount, setSelectedCount] = useState(null); //? Cantidad seleccionada en el modal del 0 al 10.
+    const [modalVisible, setModalVisible] = useState(false);  //? Y este es el modal para seleccionar esa cantidad.
+
+    const [modalSalirOAcabarJuego, setModalSalirOAcabarJuego] = useState(false); //? Modal para confirmar si quieres salir de la partida o finalizarla (si ya ha comenzado). 
+    const [modalSegundaParte, setModalSegundaParte] = useState(false); //? Modal especial que aparece al entrar en segunda fase (ronda 7). 
     const navigation = useNavigation();
 
     const currentPlayer = players[turn];
@@ -43,8 +45,7 @@ const ManualMode = () => {
         });
 
         // 🔹 Añadir la cara como deshabilitada SOLO al jugador actual
-        setDisabledFaces({
-            ...disabledFaces,
+        setDisabledFaces({ ...disabledFaces,
             [currentPlayer]: [...disabledFaces[currentPlayer], selectedFace.id]
         });
 
@@ -67,16 +68,15 @@ const ManualMode = () => {
         const unsubscribe = navigation.addListener("beforeRemove", (e) => {
             if (!isGameStarted) return;
             e.preventDefault();
-            setExitModalVisible(true);
+            setModalSalirOAcabarJuego(true);
         });
-
         return unsubscribe;
     }, [navigation, isGameStarted]);
 
     // Mostrar modal especial al entrar en segunda fase o finalizar juego, según la fase (gamePhase).
     useEffect(() => {
         if (gamePhase === "second") {
-            setPhaseModalVisible(true);
+            setModalSegundaParte(true);
         } else if (gamePhase === "finished") {
             resetGame();
             finishGame();
@@ -173,12 +173,12 @@ const ManualMode = () => {
 
             {/* --- MODAL ESPECIAL SEGUNDA FASE (RONDA 7) --- */}
             <SecondPhaseModal
-                visible={phaseModalVisible}
+                visible={modalSegundaParte}
                 players={players}
                 scores={scores}
                 onSelect={(type) => {
                     startSecondPhase(type);
-                    setPhaseModalVisible(false);
+                    setModalSegundaParte(false);
                 }}
             />
 
@@ -191,10 +191,10 @@ const ManualMode = () => {
             />
             {/* ---- MODAL SALIR DE PARTIDA ---- */}
             <ExitGameModal
-                visible={exitModalVisible}
-                onCancel={() => setExitModalVisible(false)}
+                visible={modalSalirOAcabarJuego}
+                onCancel={() => setModalSalirOAcabarJuego(false)}
                 onExit={() => {
-                    setExitModalVisible(false);
+                    setModalSalirOAcabarJuego(false);
                     // Resetear estado del juego
                     setDisabledFaces(
                         players.reduce((acc, p) => {
@@ -206,7 +206,7 @@ const ManualMode = () => {
                     router.replace("/player-selection");
                 }}
                 onFinish={() => {
-                    setExitModalVisible(false);
+                    setModalSalirOAcabarJuego(false);
                     finishGame();
                     router.replace("/end-game");
                 }}

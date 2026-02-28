@@ -1,5 +1,6 @@
 import { createContext, useContext, useState } from "react";
-import DADES from "../app/dades.jsx"; // ajusta ruta si hace falta
+import DADES from "../app/dades.jsx";
+
 const GameContext = createContext();
 
 export const GameProvider = ({ children }) => {
@@ -10,10 +11,14 @@ export const GameProvider = ({ children }) => {
   const [scoresModalVisible, setScoresModalVisible] = useState(false);
   const [turn, setTurn] = useState(0);
   const [round, setRound] = useState(1);
-  // Para registrar el orden de selección en la segunda fase
-  const [secondPhaseOrder, setSecondPhaseOrder] = useState([]);
+
+
+  // Para registrar el orden de selección en la segunda fase (de 1 a 6 > primero negras | de 6 a 1 - primero ases)
+  const [secondPhaseOrder, setSecondPhaseOrder] = useState([]); 
   // índice actual de la figura en segunda tanda
   const [secondPhaseStep, setSecondPhaseStep] = useState(0);
+
+
 
   const [isGameStarted, setIsGameStarted] = useState(false);
   const [gamePhase, setGamePhase] = useState("first"); // "first" | "second" | "finished"
@@ -103,15 +108,18 @@ export const GameProvider = ({ children }) => {
     });
   };
 
-  // Segunda fase - establecer orden y caras deshabilitadas
+  //! Lógica de segunda fase ↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓
+
+  // Segunda fase - establecer orden y caras deshabilitadas (negras o ases elegidas por el primer jugador)
   const startSecondPhase = (type) => {
     let order = [];
 
     if (type === "negras") {
-      order = DADES.map(f => f.id).sort((a, b) => a - b);
+      order = DADES.map(f => f.id).sort((a, b) => a - b); // orden ascendente: 1, 2, 3, 4, 5, 6
     } else {
-      order = DADES.map(f => f.id).sort((a, b) => b - a);
+      order = DADES.map(f => f.id).sort((a, b) => b - a); // orden descendente: 6, 5, 4, 3, 2, 1
     }
+
 
     setSecondPhaseOrder(order);
     setSecondPhaseStep(0);
@@ -123,16 +131,18 @@ export const GameProvider = ({ children }) => {
       updated[p] = DADES
         .map(f => f.id)
         .filter(id => id !== firstId);
-    });
+    }); // Aqui se establece las caras deshabilitadas, si por ejemplo son negras, updated tendrá de valor [6, 5, 4, 3, 2] para cada jugador, y si son ases tendrá [5, 4, 3, 2, 1].
+
+    console.log("Iniciando segunda fase. Caras deshabilitadas:", updated);
 
     setDisabledFaces(updated);
   };
 
-  // Estado de caras deshabilitadas en segunda fase
-  const advanceSecondPhase = () => {
+  // Estado de caras deshabilitadas en segunda fase (se van moviendo según el orden establecido y el paso actual  [2, 3, 4, 5, 6] -> [1, 3, 4, 5, 6] -> [1, 2, 4, 5, 6] ...)
+  const avanzarASiguienteFigura = () => {
     const nextStep = secondPhaseStep + 1;
 
-    if (nextStep >= secondPhaseOrder.length) {
+    if (nextStep >= 6) {
       return;
     }
 
@@ -149,10 +159,9 @@ export const GameProvider = ({ children }) => {
     setSecondPhaseStep(nextStep);
   };
 
+  //! Lógica de segunda fase ↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑
 
-
-
-  //>>> Avanzar el juego (turno y ronda).
+  // Avanzar el juego al siguiente turno de jugador o ronda, y manejar transición a segunda fase y fin de juego.
   const advanceGame = () => {
     // ¿último jugador de la ronda?
     if (turn === players.length - 1) {
@@ -168,7 +177,7 @@ export const GameProvider = ({ children }) => {
       setTurn(0);
 
       if (gamePhase === "second") {
-        advanceSecondPhase();
+        avanzarASiguienteFigura();
       }
 
       // 🔥 entrada a segunda fase
@@ -209,7 +218,7 @@ export const GameProvider = ({ children }) => {
 
         turn, setTurn,
         round, setRound,
-        secondPhaseOrder, setSecondPhaseOrder,
+
         secondPhaseStep, setSecondPhaseStep,
         resetRoundState,
         resetWholeGame,

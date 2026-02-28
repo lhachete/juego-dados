@@ -27,6 +27,7 @@ const VirtualMode = () => {
         advanceGame,
         usedFaces,
         addUsedFace,
+        disabledFaces,
         startSecondPhase,
         gamePhase,
         resetGame
@@ -48,7 +49,11 @@ const VirtualMode = () => {
         faces: [],
         total: 0,
     });
+    
 
+
+    //! BAJO CONTROL ↑↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓
+    
     /* 🎲 Tirar dados */
     const rollDice = async () => {
         if (isRolling || rollsLeft === 0) return;
@@ -69,14 +74,14 @@ const VirtualMode = () => {
             const randomFace =
                 DADES[Math.floor(Math.random() * DADES.length)];
 
-            await new Promise((resolve) => setTimeout(resolve, 300));
+            await new Promise((resolve) => setTimeout(resolve, 0));
 
             newDice[i] = {
                 value: randomFace.id,
                 face: randomFace,
                 locked: false,
             };
-
+            console.log(`Dado ${i + 1} tirado:`, newDice[i]);
             setDiceResults([...newDice]);
         }
 
@@ -84,10 +89,11 @@ const VirtualMode = () => {
         setIsRolling(false);
     };
 
-    /* 🔒 Bloquear dados */
+
+    /* 🔒 Bloquear dados, manualmente */
     const lockDices = (index) => {
         if (isRolling || !diceResults[index].face) return;
-
+        
         // Si todavía quedan tiradas, se puede seleccionar libremente
         if (rollsLeft > 0) {
             setDiceResults(prev =>
@@ -154,6 +160,10 @@ const VirtualMode = () => {
 
     };
 
+
+
+
+    //! BAJO CONTROL ↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑
 
     /* 🧮 Calcular puntos + preparar modal */
     const handleScoreSelection = () => {
@@ -226,17 +236,13 @@ const VirtualMode = () => {
             const faceId = nonAces.length > 0 ? nonAces[0].id : 6;
             addUsedFace(currentPlayer, faceId);
         }
-
+        
         setDiceResults([]);
         setRollsLeft(3);
         setConfirmModalVisible(false);
         advanceGame();
     };
-
-    useEffect(() => {
-        if (!isGameStarted) startGame();
-    }, []);
-
+    
     useEffect(() => {
         if (!confirmModalVisible) {
             setZeroFaceSelected(null);
@@ -254,6 +260,24 @@ const VirtualMode = () => {
         return unsubscribe;
     }, [navigation, isGameStarted]);
 
+
+    //! BAJO CONTROL ↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓
+
+    // RESETEAR SELECCIÓN DE DADOS AL ACABAR LAS TIRADAS
+    useEffect(() => {
+        if (rollsLeft === 0) {
+            setDiceResults(prev =>
+                prev.map(die => ({ ...die, locked: false }))
+            );
+        }
+    }, [rollsLeft]);
+    
+
+    useEffect(() => {
+        if (!isGameStarted) startGame();
+    }, []);
+    
+
     useEffect(() => {
         if (gamePhase === "second") {
             setPhaseModalVisible(true);
@@ -263,6 +287,8 @@ const VirtualMode = () => {
             router.replace("/end-game");
         }
     }, [gamePhase]);
+    
+    //! BAJO CONTROL ↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑
 
     return (
         <View style={styles.container}>
