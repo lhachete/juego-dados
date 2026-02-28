@@ -49,11 +49,15 @@ const VirtualMode = () => {
         faces: [],
         total: 0,
     });
-    
+
+    const facesToDisable =
+        gamePhase === "second"
+            ? disabledFaces[currentPlayer] || []
+            : usedFaces[currentPlayer] || [];
 
 
     //! BAJO CONTROL ↑↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓↓
-    
+
     /* 🎲 Tirar dados */
     const rollDice = async () => {
         if (isRolling || rollsLeft === 0) return;
@@ -93,7 +97,7 @@ const VirtualMode = () => {
     /* 🔒 Bloquear dados, manualmente */
     const lockDices = (index) => {
         if (isRolling || !diceResults[index].face) return;
-        
+
         // Si todavía quedan tiradas, se puede seleccionar libremente
         if (rollsLeft > 0) {
             setDiceResults(prev =>
@@ -168,7 +172,7 @@ const VirtualMode = () => {
     /* 🧮 Calcular puntos + preparar modal */
     const handleScoreSelection = () => {
         const selected = diceResults.filter(d => d.locked);
-        const used = usedFaces[currentPlayer] || [];
+        const used = facesToDisable;
 
         // 👉 Caso: no ha seleccionado nada
         if (selected.length === 0) {
@@ -195,10 +199,17 @@ const VirtualMode = () => {
             const faceLabel =
                 nonAces.length > 0 ? nonAces[0].label : faces[0].label;
 
-            Alert.alert(
-                "Figura ya usada",
-                `Ya has anotado ${faceLabel}`
-            );
+            if (gamePhase === "second") {
+                Alert.alert(
+                    "Figura deshabilitada",
+                    `Solo puedes anotar la figura activa en esta ronda`
+                );
+            } else {
+                Alert.alert(
+                    "Figura ya usada",
+                    `Ya has anotado ${faceLabel}`
+                );
+            }
             return;
         }
 
@@ -236,13 +247,13 @@ const VirtualMode = () => {
             const faceId = nonAces.length > 0 ? nonAces[0].id : 6;
             addUsedFace(currentPlayer, faceId);
         }
-        
+
         setDiceResults([]);
         setRollsLeft(3);
         setConfirmModalVisible(false);
         advanceGame();
     };
-    
+
     useEffect(() => {
         if (!confirmModalVisible) {
             setZeroFaceSelected(null);
@@ -271,12 +282,12 @@ const VirtualMode = () => {
             );
         }
     }, [rollsLeft]);
-    
+
 
     useEffect(() => {
         if (!isGameStarted) startGame();
     }, []);
-    
+
 
     useEffect(() => {
         if (gamePhase === "second") {
@@ -287,7 +298,7 @@ const VirtualMode = () => {
             router.replace("/end-game");
         }
     }, [gamePhase]);
-    
+
     //! BAJO CONTROL ↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑↑
 
     return (
@@ -317,7 +328,7 @@ const VirtualMode = () => {
                 visible={figuresModalVisible}
                 onClose={() => setFiguresModalVisible(false)}
                 faces={DADES}
-                usedFaces={usedFaces[currentPlayer] || []}
+                usedFaces={facesToDisable}
             />
 
             {/* ZONA JUEGO */}
@@ -396,7 +407,7 @@ const VirtualMode = () => {
 
                                 <FiguresGrid
                                     faces={DADES}
-                                    disabledFaces={usedFaces[currentPlayer] || []}
+                                    disabledFaces={facesToDisable}
                                     interactive
                                     variant="compact"
                                     onFacePress={setZeroFaceSelected}
