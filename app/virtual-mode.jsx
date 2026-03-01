@@ -51,7 +51,7 @@ const VirtualMode = () => {
     });
 
     const [bonusPoints, setBonusPoints] = useState(0);
-    const [bonusFaceId, setBonusFaceId] = useState(null);
+    const [bonusFace, setBonusFace] = useState(null);
     const [isBonusMode, setIsBonusMode] = useState(false);
 
     const facesToDisable =
@@ -60,9 +60,9 @@ const VirtualMode = () => {
             : usedFaces[currentPlayer] || [];
 
     const isDiceDisabled = (die) => {
-        return bonusFaceId !== null &&
+        return bonusFace !== null &&
             die.face &&
-            die.face.id !== bonusFaceId &&
+            die.face.id !== bonusFace.id &&
             die.face.id !== 6;
     };
 
@@ -105,7 +105,7 @@ const VirtualMode = () => {
     /* 🔒 Bloquear dados, manualmente */
     const lockDices = (index) => {
         if (isRolling || !diceResults[index].face) return;
-        if (bonusFaceId !== null) {
+        if (bonusFace !== null) {
 
             const clickedFace = diceResults[index].face;
             if (!clickedFace) return;
@@ -124,7 +124,7 @@ const VirtualMode = () => {
             // - figura del bonus
             // - ases (comodín id 6)
 
-            if (clickedFace.id === bonusFaceId || clickedFace.id === 6) {
+            if (clickedFace.id === bonusFace.id || clickedFace.id === 6) {
                 setDiceResults(prev =>
                     prev.map((die, i) =>
                         i === index ? { ...die, locked: true } : die
@@ -223,9 +223,11 @@ const VirtualMode = () => {
         const faces = selected.map(d => d.face);
 
         // Si hubo bonus → la figura base SIEMPRE es la del bonus
-        const baseFaceId = bonusFaceId !== null
-            ? bonusFaceId
-            : (nonAces.length > 0 ? nonAces[0].id : 6);
+        // Quitamos ases para detectar la figura base
+        const nonAces = faces.filter(f => f?.id !== 6);
+
+        const baseFaceId = bonusFace?.id ??
+            (nonAces.length > 0 ? nonAces[0].id : 6);
 
         const baseValue = baseFaceId;
 
@@ -279,10 +281,9 @@ const VirtualMode = () => {
             // flujo normal
             addScore(currentPlayer, scorePreview.total);
 
-            const nonAces = scorePreview.faces.filter(f => f.id !== 6);
-            const faceId = bonusFaceId !== null
-                ? bonusFaceId
-                : (nonAces.length > 0 ? nonAces[0].id : 6);
+            const nonAces = scorePreview.faces.filter(f => f?.id !== 6);
+            const faceId = bonusFace?.id ??
+    (nonAces.length > 0 ? nonAces[0].id : 6);
 
             addUsedFace(currentPlayer, faceId);
         }
@@ -291,7 +292,7 @@ const VirtualMode = () => {
         setRollsLeft(15);
         setConfirmModalVisible(false);
         setBonusPoints(0);
-        setBonusFaceId(null);
+        setBonusFace(null);
         setIsBonusMode(false);
         advanceGame();
     };
@@ -302,7 +303,7 @@ const VirtualMode = () => {
 
         setIsRolling(true);
 
-        const baseValue = bonusFaceId;
+        const baseValue = bonusFace.id;
 
         // 🔥 1. Acumulamos el bonus del quinteto actual
         setBonusPoints(prev => prev + (5 * baseValue));
@@ -373,6 +374,7 @@ const VirtualMode = () => {
 
         const nonAces = faces.filter(f => f.id !== 6);
         const baseId = nonAces.length > 0 ? nonAces[0].id : 6;
+        const baseFace = DADES.find(f => f.id === baseId);
 
         const allSame = faces.every(f =>
             f.id === baseId || f.id === 6
@@ -380,7 +382,7 @@ const VirtualMode = () => {
 
         if (allSame) {
             setIsBonusMode(true);
-            setBonusFaceId(baseId);
+            setBonusFace(baseFace);
         } else {
             setIsBonusMode(false);
         }
@@ -535,7 +537,13 @@ const VirtualMode = () => {
                             </>
                         )}
 
-
+                        {bonusFace && scorePreview.faces.length === 0 && (
+                            <Image
+                                source={bonusFace.img}
+                                style={styles.faceBonusImg}
+                                resizeMode="contain"
+                            />
+                        )}
                         {scorePreview.bonus > 0 && (
                             <Text style={styles.modalBonus}>
                                 Bonus: {scorePreview.bonus} puntos
@@ -846,7 +854,12 @@ const styles = StyleSheet.create({
         fontSize: 17,
         fontWeight: "600",
         marginBottom: 5,
-    }
+    },
+    faceBonusImg: {
+        width: 50,
+        height: 50,
+        marginBottom: 55,
+    },
 
 
 });
