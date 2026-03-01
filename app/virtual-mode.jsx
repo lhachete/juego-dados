@@ -44,7 +44,7 @@ const VirtualMode = () => {
 
     const [diceResults, setDiceResults] = useState([]);
     const [isRolling, setIsRolling] = useState(false);
-    const [rollsLeft, setRollsLeft] = useState(15);
+    const [rollsLeft, setRollsLeft] = useState(3);
     const [scorePreview, setScorePreview] = useState({
         faces: [],
         total: 0,
@@ -87,7 +87,7 @@ const VirtualMode = () => {
             const randomFace =
                 DADES[Math.floor(Math.random() * DADES.length)];
 
-            await new Promise((resolve) => setTimeout(resolve, 0));
+            await new Promise((resolve) => setTimeout(resolve, 300));
 
             newDice[i] = {
                 value: randomFace.id,
@@ -289,7 +289,7 @@ const VirtualMode = () => {
         }
 
         setDiceResults([]);
-        setRollsLeft(15);
+        setRollsLeft(3);
         setConfirmModalVisible(false);
         setBonusPoints(0);
         setBonusFace(null);
