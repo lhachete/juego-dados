@@ -67,7 +67,6 @@ const VirtualMode = () => {
     };
 
 
-    /* 🎲 Tirar dados */
     const rollDice = async () => {
         if (isRolling || rollsLeft === 0) return;
         setIsRolling(true);
@@ -102,7 +101,6 @@ const VirtualMode = () => {
     };
 
 
-    /* 🔒 Bloquear dados, manualmente */
     const lockDices = (index) => {
         if (isRolling || !diceResults[index].face) return;
         if (bonusFace !== null) {
@@ -110,7 +108,6 @@ const VirtualMode = () => {
             const clickedFace = diceResults[index].face;
             if (!clickedFace) return;
 
-            // Siempre permitimos deseleccionar
             if (diceResults[index].locked) {
                 setDiceResults(prev =>
                     prev.map((die, i) =>
@@ -119,10 +116,6 @@ const VirtualMode = () => {
                 );
                 return;
             }
-
-            // SOLO permitir:
-            // - figura del bonus
-            // - ases (comodín id 6)
 
             if (clickedFace.id === bonusFace.id || clickedFace.id === 6) {
                 setDiceResults(prev =>
@@ -134,7 +127,6 @@ const VirtualMode = () => {
             return;
         }
 
-        // Si todavía quedan tiradas, se puede seleccionar libremente
         if (rollsLeft > 0) {
             setDiceResults(prev =>
                 prev.map((die, i) =>
@@ -144,15 +136,11 @@ const VirtualMode = () => {
             return;
         }
 
-        // ⛔ A partir de aquí: rollsLeft === 0 (fase de anotación)
-
         const clickedDie = diceResults[index];
         const clickedFace = clickedDie.face;
 
-        // Dados ya seleccionados (locked)
         const selectedDice = diceResults.filter(d => d.locked);
 
-        // Si estamos deseleccionando, siempre permitimos
         if (clickedDie.locked) {
             setDiceResults(prev =>
                 prev.map((die, i) =>
@@ -162,12 +150,10 @@ const VirtualMode = () => {
             return;
         }
 
-        // Figuras seleccionadas (sin contar Áses)
         const selectedNonAces = selectedDice
             .map(d => d.face)
             .filter(face => face.id !== 6);
 
-        // Caso 1️⃣: no hay ninguna figura aún → permitimos
         if (selectedNonAces.length === 0) {
             setDiceResults(prev =>
                 prev.map((die, i) =>
@@ -177,7 +163,6 @@ const VirtualMode = () => {
             return;
         }
 
-        // Caso 2️⃣: ya hay una figura y el click es Ás → permitimos
         if (clickedFace.id === 6) {
             setDiceResults(prev =>
                 prev.map((die, i) =>
@@ -187,7 +172,6 @@ const VirtualMode = () => {
             return;
         }
 
-        // Caso 3️⃣: ya hay una figura y el click es la MISMA figura → permitimos
         if (clickedFace.id === selectedNonAces[0].id) {
             setDiceResults(prev =>
                 prev.map((die, i) =>
@@ -196,20 +180,14 @@ const VirtualMode = () => {
             );
             return;
         }
-        // ❌ Caso 4: figura distinta → No ocurre nada
 
     };
 
 
-
-
-
-    /* 🧮 Calcular puntos + preparar modal */
     const handleScoreSelection = () => {
         const selected = diceResults.filter(d => d.locked);
         const used = facesToDisable;
 
-        // 👉 Caso: no ha seleccionado nada
         if (selected.length === 0 && bonusPoints === 0) {
             setScorePreview({
                 faces: [],
@@ -219,11 +197,7 @@ const VirtualMode = () => {
             return;
         }
 
-        // Caras seleccionadas
         const faces = selected.map(d => d.face);
-
-        // Si hubo bonus → la figura base SIEMPRE es la del bonus
-        // Quitamos ases para detectar la figura base
         const nonAces = faces.filter(f => f?.id !== 6);
 
         const baseFaceId = bonusFace?.id ??
@@ -231,7 +205,6 @@ const VirtualMode = () => {
 
         const baseValue = baseFaceId;
 
-        // 🚫 Comprobación: figura ya usada
         if (used.includes(baseFaceId)) {
             const faceLabel =
                 nonAces.length > 0 ? nonAces[0].label : faces[0].label;
@@ -250,7 +223,6 @@ const VirtualMode = () => {
             return;
         }
 
-        // Cálculo de puntos
         const totalPoints = bonusPoints + (selected.length * baseValue);
 
         setScorePreview({
@@ -263,10 +235,7 @@ const VirtualMode = () => {
     };
 
 
-
-    /* 🚀 Confirmar anotación */
     const confirmScore = () => {
-        // CASO 0 PUNTOS
         if (scorePreview.faces.length === 0 && bonusPoints === 0) {
             if (!zeroFaceSelected) {
                 Alert.alert("Selecciona una figura");
@@ -278,7 +247,6 @@ const VirtualMode = () => {
 
             setZeroFaceSelected(null);
         } else {
-            // flujo normal
             addScore(currentPlayer, scorePreview.total);
 
             const nonAces = scorePreview.faces.filter(f => f?.id !== 6);
@@ -297,18 +265,14 @@ const VirtualMode = () => {
         advanceGame();
     };
 
-    //!vvvvvvvvvvvvvvvvvvvvvvvvvvvvv BOnus
     const handleBonusRoll = async () => {
         if (isRolling || rollsLeft === 0) return;
 
         setIsRolling(true);
 
         const baseValue = bonusFace.id;
-
-        // 🔥 1. Acumulamos el bonus del quinteto actual
         setBonusPoints(prev => prev + (5 * baseValue));
 
-        // 🔥 2. Tiramos 5 dados completamente nuevos
         let newDice = Array.from({ length: 5 }, () => {
             const randomFace =
                 DADES[Math.floor(Math.random() * DADES.length)];
@@ -321,10 +285,7 @@ const VirtualMode = () => {
         });
 
         setDiceResults(newDice);
-
-        // 🔥 3. Consumimos SOLO una tirada normal
         setRollsLeft(prev => prev - 1);
-
         setIsBonusMode(false);
         setIsRolling(false);
     };
@@ -349,9 +310,6 @@ const VirtualMode = () => {
     }, [navigation, isGameStarted]);
 
 
-
-
-    // RESETEAR SELECCIÓN DE DADOS AL ACABAR LAS TIRADAS
     useEffect(() => {
         if (rollsLeft === 0) {
             setDiceResults(prev =>
@@ -362,7 +320,7 @@ const VirtualMode = () => {
 
 
     useEffect(() => {
-        if (rollsLeft === 0) return; // solo antes de acabar tiradas
+        if (rollsLeft === 0) return; 
 
         const selected = diceResults.filter(d => d.locked);
         if (selected.length !== 5) {
@@ -408,7 +366,7 @@ const VirtualMode = () => {
 
     return (
         <View style={styles.container}>
-            {/* INFO */}
+
             <Text style={styles.roundText}>
                 Ronda {round} / {TOTAL_ROUNDS}
             </Text>
@@ -436,7 +394,6 @@ const VirtualMode = () => {
                 usedFaces={facesToDisable}
             />
 
-            {/* ZONA JUEGO */}
             <View style={styles.virtualActionArea}>
                 <View style={styles.topArea}>
                     <Text style={styles.textInfo}>
@@ -501,7 +458,6 @@ const VirtualMode = () => {
                 </View>
             </View>
 
-            {/* ---- MODAL CONFIRMACIÓN ANOTACIÓN ---- */}
             <Modal transparent visible={confirmModalVisible} animationType="fade">
                 <View style={styles.modalBackdrop}>
                     <View style={styles.modalContent}>
@@ -553,7 +509,6 @@ const VirtualMode = () => {
                             Total: {scorePreview.total} puntos
                         </Text>
 
-                        {/* CONFIRMAR */}
                         <TouchableOpacity
                             style={[
                                 styles.modalConfirmBtn,
@@ -574,8 +529,6 @@ const VirtualMode = () => {
                             </Text>
                         </TouchableOpacity>
 
-
-                        {/* CANCELAR */}
                         <TouchableOpacity
                             style={styles.cancelBtn}
                             onPress={() => setConfirmModalVisible(false)}
@@ -589,7 +542,6 @@ const VirtualMode = () => {
             </Modal>
 
 
-            {/* PUNTUACIONES */}
             <TouchableOpacity
                 style={styles.viewScoresBtn}
                 onPress={() => setScoresModalVisible(true)}
@@ -668,7 +620,6 @@ const styles = StyleSheet.create({
         marginBottom: 10,
     },
 
-    /* ---- GRID COMPACTO ---- */
     grid: {
         width: "90%",
         flexDirection: "row",
@@ -704,7 +655,7 @@ const styles = StyleSheet.create({
         justifyContent: "center",
     },
     middleArea: {
-        flex: 4, // 👈 más grande
+        flex: 4,
         justifyContent: "center",
         alignItems: "center",
     },
@@ -726,7 +677,6 @@ const styles = StyleSheet.create({
         fontSize: 18,
         fontWeight: "600",
     },
-    // ---- ESTILOS MODAL FIGURAS ----
 
     linkText: {
         color: "#9CA3AF",
@@ -734,7 +684,6 @@ const styles = StyleSheet.create({
         textDecorationLine: "underline",
     },
 
-    // ---- ESTILOS DADOS ----
     rollBtn: {
         marginTop: 20,
         paddingVertical: 14,
@@ -774,7 +723,7 @@ const styles = StyleSheet.create({
         fontSize: 16,
         alignSelf: "center",
     },
-    //Dado seleccionado
+
     diceWrapper: {
         borderWidth: 2,
         borderColor: "transparent",
@@ -784,7 +733,7 @@ const styles = StyleSheet.create({
     diceLocked: {
         borderColor: "#FACC15",
     },
-    /* ---- MODAL CONFIRMACIÓN ---- */
+
     modalBackdrop: {
         flex: 1,
         backgroundColor: "rgba(0,0,0,0.5)",

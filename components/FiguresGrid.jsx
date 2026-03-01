@@ -5,7 +5,7 @@ const FiguresGrid = ({
   disabledFaces = [],
   interactive = false,
   onFacePress,
-  variant = "manual", // 👈 por defecto manual
+  variant = "manual",
   selectedFaceId
 }) => {
   return (
@@ -56,7 +56,6 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
 
-  /* ----- BASE ----- */
   faceBox: {
     backgroundColor: "#1F2937",
     justifyContent: "center",
@@ -72,7 +71,6 @@ const styles = StyleSheet.create({
     opacity: 0.3,
   },
 
-  /* ===== MANUAL MODE (igual que antes) ===== */
   manual: {
     width: "40%",
     height: 120,
@@ -86,7 +84,6 @@ const styles = StyleSheet.create({
     height: "65%",
   },
 
-  /* ===== COMPACT / VIRTUAL ===== */
   compact: {
     width: "40%",
     aspectRatio: 1,
@@ -99,7 +96,7 @@ const styles = StyleSheet.create({
   },
   faceSelected: {
     borderWidth: 2,
-    borderColor: "#FFD700", // dorado
+    borderColor: "#FFD700",
   },
 
 });

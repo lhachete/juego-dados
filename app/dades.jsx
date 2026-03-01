@@ -2,8 +2,8 @@ import A from "../assets/A.png";
 import K from "../assets/K.png";
 import Q from "../assets/Q.png";
 import J from "../assets/J.png";
-import R from "../assets/R.png";   // rojas
-import N from "../assets/N.png";   // negras
+import R from "../assets/R.png";
+import N from "../assets/N.png";
 
 const DADES = [
   { id: 6, label: "Ás", img: A },

@@ -14,18 +14,17 @@ const ManualMode = () => {
         scoresModalVisible, setScoresModalVisible, exitGame, finishGame, isGameStarted,
         startGame, resetGame, disabledFaces, setDisabledFaces, startSecondPhase, gamePhase, advanceGame
     } = useGame();
-    const [selectedFace, setSelectedFace] = useState(null); //? Cara seleccionada del grid de figuras.
+    const [selectedFace, setSelectedFace] = useState(null); 
 
-    const [selectedCount, setSelectedCount] = useState(null); //? Cantidad seleccionada en el modal del 0 al 10.
-    const [modalVisible, setModalVisible] = useState(false);  //? Y este es el modal para seleccionar esa cantidad.
+    const [selectedCount, setSelectedCount] = useState(null); 
+    const [modalVisible, setModalVisible] = useState(false); 
 
-    const [modalSalirOAcabarJuego, setModalSalirOAcabarJuego] = useState(false); //? Modal para confirmar si quieres salir de la partida o finalizarla (si ya ha comenzado). 
-    const [modalSegundaParte, setModalSegundaParte] = useState(false); //? Modal especial que aparece al entrar en segunda fase (ronda 7). 
+    const [modalSalirOAcabarJuego, setModalSalirOAcabarJuego] = useState(false); 
+    const [modalSegundaParte, setModalSegundaParte] = useState(false);
     const navigation = useNavigation();
 
     const currentPlayer = players[turn];
 
-    // Al pulsar una figura, se abre el modal para seleccionar cantidad, además de marcarla como seleccionada
     const handleFacePress = (face) => {
         setSelectedFace(face);
         setModalVisible(true);
@@ -36,7 +35,6 @@ const ManualMode = () => {
         if (selectedCount === null) return;
 
         const prev = scores[currentPlayer] || 0;
-        // Calcular puntos a añadir según figura y cantidad.
         const added = selectedFace.id * selectedCount;
 
         setScores({
@@ -44,7 +42,6 @@ const ManualMode = () => {
             [currentPlayer]: prev + added,
         });
 
-        // 🔹 Añadir la cara como deshabilitada SOLO al jugador actual
         setDisabledFaces({ ...disabledFaces,
             [currentPlayer]: [...disabledFaces[currentPlayer], selectedFace.id]
         });
@@ -55,15 +52,12 @@ const ManualMode = () => {
         advanceGame();
     };
 
-
-    // Iniciar el juego al montar el componente
     useEffect(() => {
         if (!isGameStarted) {
             startGame();
         }
     }, []);
 
-    // Confirmar salida si el juego ha comenzado, bloquear navegación.
     useEffect(() => {
         const unsubscribe = navigation.addListener("beforeRemove", (e) => {
             if (!isGameStarted) return;
@@ -73,7 +67,6 @@ const ManualMode = () => {
         return unsubscribe;
     }, [navigation, isGameStarted]);
 
-    // Mostrar modal especial al entrar en segunda fase o finalizar juego, según la fase (gamePhase).
     useEffect(() => {
         if (gamePhase === "second") {
             setModalSegundaParte(true);
@@ -85,7 +78,6 @@ const ManualMode = () => {
     }, [gamePhase]);
 
 
-
     return (
         <View style={styles.container}>
 
@@ -94,7 +86,6 @@ const ManualMode = () => {
             <Text style={styles.currentPlayerScore}> Puntos: {currentPlayer in scores ? scores[currentPlayer] : 0} </Text>
             <Text style={styles.subtitle}>Figuras por completar</Text>
 
-            {/* GRID DE FIGURAS */}
             <FiguresGrid
                 faces={DADES}
                 disabledFaces={disabledFaces[currentPlayer]}
@@ -103,8 +94,6 @@ const ManualMode = () => {
                 variant="manual"
             />
 
-
-
             <TouchableOpacity
                 style={styles.viewScoresBtn}
                 onPress={() => setScoresModalVisible(true)}
@@ -112,9 +101,6 @@ const ManualMode = () => {
                 <Text style={styles.viewScoresText}>Ver puntuaciones</Text>
             </TouchableOpacity>
 
-
-
-            {/* ---- MODAL ---- */}
             <Modal transparent visible={modalVisible} animationType="fade">
                 <View style={styles.modalBackdrop}>
                     <View style={styles.modalContent}>
@@ -122,7 +108,6 @@ const ManualMode = () => {
                             ¿Cuántos dados de {selectedFace?.label} han salido?
                         </Text>
 
-                        {/* NÚMEROS DEL 0 AL 10 */}
                         <View style={styles.countGrid}>
                             {[...Array(11)].map((_, i) => {
                                 const num = i;
@@ -143,7 +128,6 @@ const ManualMode = () => {
                             })}
                         </View>
 
-                        {/* BOTÓN CONFIRMAR PUNTOS */}
                         <TouchableOpacity
                             style={[
                                 styles.modalConfirmBtn,
@@ -155,7 +139,7 @@ const ManualMode = () => {
                         >
                             <Text style={styles.modalConfirmText}>Confirmar</Text>
                         </TouchableOpacity>
-                        {/* BOTÓN CANCELAR */}
+
                         <TouchableOpacity
                             style={styles.cancelBtn}
                             onPress={() => {
@@ -171,7 +155,6 @@ const ManualMode = () => {
                 </View>
             </Modal>
 
-            {/* --- MODAL ESPECIAL SEGUNDA FASE (RONDA 7) --- */}
             <SecondPhaseModal
                 visible={modalSegundaParte}
                 players={players}
@@ -182,20 +165,18 @@ const ManualMode = () => {
                 }}
             />
 
-            {/* ---- MODAL PUNTUACIONES TOTALES ---- */}
             <ScoresModal
                 visible={scoresModalVisible}
                 players={players}
                 scores={scores}
                 onClose={() => setScoresModalVisible(false)}
             />
-            {/* ---- MODAL SALIR DE PARTIDA ---- */}
+
             <ExitGameModal
                 visible={modalSalirOAcabarJuego}
                 onCancel={() => setModalSalirOAcabarJuego(false)}
                 onExit={() => {
                     setModalSalirOAcabarJuego(false);
-                    // Resetear estado del juego
                     setDisabledFaces(
                         players.reduce((acc, p) => {
                             acc[p] = [];
@@ -227,7 +208,6 @@ const styles = StyleSheet.create({
         alignItems: "center",
     },
 
-    /* ---- Ronda ---- */
     roundText: {
         color: "#FACC15",
         fontSize: 20,
@@ -288,7 +268,6 @@ const styles = StyleSheet.create({
         color: "#1F2937",
     },
 
-    /* ---- Modal ---- */
     modalBackdrop: {
         flex: 1,
         backgroundColor: "rgba(0,0,0,0.5)",

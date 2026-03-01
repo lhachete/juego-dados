@@ -7,7 +7,6 @@ const SecondPhaseModal = ({ visible, players, scores, onSelect }) => {
         <View style={styles.modalContent}>
           <Text style={styles.modalTitle}>Puntuaciones actuales</Text>
 
-          {/* LISTA DE JUGADORES + PUNTOS */}
           <View style={styles.listContainer}>
             {players.map((p) => (
               <View key={p} style={styles.row}>
@@ -63,7 +62,6 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
 
-  /* === LISTA ESTILO END-GAME === */
   listContainer: {
     width: "100%",
     marginBottom: 12,
