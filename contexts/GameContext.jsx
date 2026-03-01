@@ -133,8 +133,6 @@ export const GameProvider = ({ children }) => {
         .filter(id => id !== firstId);
     }); // Aqui se establece las caras deshabilitadas, si por ejemplo son negras, updated tendrá de valor [6, 5, 4, 3, 2] para cada jugador, y si son ases tendrá [5, 4, 3, 2, 1].
 
-    console.log("Iniciando segunda fase. Caras deshabilitadas:", updated);
-
     setDisabledFaces(updated);
   };
 
