@@ -1,6 +1,6 @@
 
 import { useEffect } from "react";
-import { View, Text, StyleSheet, useWindowDimensions } from "react-native";
+import { View, Text, StyleSheet, useWindowDimensions, Image } from "react-native";
 import Animated, {
     useSharedValue,
     useAnimatedStyle,
@@ -17,13 +17,30 @@ const EventBanner = ({ event }) => {
     useEffect(() => {
         if (!event) return;
 
-        // Comienza fuera de la pantalla, por la izquierda.
+        // Transición directa: cambia el contenido sin volver a entrar
+        // desde la izquierda.
+        if (event.transition) {
+            opacity.value = withSequence(
+                withTiming(0, { duration: 120 }),
+                withTiming(1, { duration: 180 }),
+                withTiming(1, { duration: 2000 }),
+                withTiming(0, { duration: 600 })
+            );
+
+            translateX.value = withSequence(
+                withTiming(0, { duration: 1 }),
+                withTiming(0, { duration: 2300 }),
+                withTiming(width, { duration: 600 })
+            );
+
+            return;
+        }
+
+        // Animación normal: entra por la izquierda,
+        // permanece 2 segundos y sale por la derecha.
         translateX.value = -width;
         opacity.value = 0;
 
-        // 1. Entra en el centro en 0,6 segundos.
-        // 2. Permanece visible durante 2 segundos.
-        // 3. Sale por la derecha en 0,6 segundos.
         translateX.value = withSequence(
             withTiming(0, { duration: 600 }),
             withTiming(0, { duration: 2000 }),
@@ -46,7 +63,7 @@ const EventBanner = ({ event }) => {
 
     const color = event.color ?? "#FACC15";
     const isRound = event.type === "round";
-    const isTurn = event.type === "turn";
+    const isScore = event.type === "score";
 
     return (
         <Animated.View
@@ -64,20 +81,56 @@ const EventBanner = ({ event }) => {
                 ]}
             />
 
-            {(isRound || isTurn) && (
-                <Text style={styles.eyebrow}>
-                    {isRound ? "⚔️ NUEVA RONDA" : "🎲 CAMBIO DE TURNO"}
-                </Text>
-            )}
+            {isScore ? (
+                <>
+                    <Text style={styles.points}>
+                        +{event.points} puntos
+                    </Text>
 
-            <Text style={[styles.title, { color }]}>
-                {event.title}
-            </Text>
 
-            {!!event.subtitle && (
-                <Text style={styles.subtitle}>
-                    {event.subtitle}
-                </Text>
+                    <View style={styles.scoreDescriptionRow}>
+                        <Text style={styles.scoreDescription}>
+                            {event.player} anotó {event.faceCount}{" "}
+                            {event.faceCount === 1 ? "figura" : "figuras"} de
+                        </Text>
+
+                        {event.faceImage && (
+                            <Image
+                                source={event.faceImage}
+                                style={styles.scoreFaceImage}
+                                resizeMode="contain"
+                            />
+                        )}
+                    </View>
+
+
+                    {!!event.nextPlayer && (
+                        <Text style={styles.nextPlayer}>
+                            Turno de {event.nextPlayer}
+                        </Text>
+                    )}
+                </>
+            ) : (
+                <>
+                    <Text style={styles.eyebrow}>
+                        {isRound ? "⚔️ NUEVA RONDA ⚔️" : event.title}
+                    </Text>
+
+                    <Text
+                        style={[
+                            styles.title,
+                            { color },
+                        ]}
+                    >
+                        {isRound ? event.title : ""}
+                    </Text>
+
+                    {!!event.subtitle && (
+                        <Text style={styles.subtitle}>
+                            {event.subtitle}
+                        </Text>
+                    )}
+                </>
             )}
         </Animated.View>
     );
@@ -110,16 +163,38 @@ const styles = StyleSheet.create({
         right: 0,
         height: 4,
     },
+    points: {
+        color: "#FACC15",
+        fontSize: 36,
+        fontWeight: "900",
+        textAlign: "center",
+        letterSpacing: 0.5,
+    },
+    scoreDescription: {
+        color: "#FFFFFF",
+        fontSize: 16,
+        fontWeight: "700",
+        textAlign: "center",
+        marginTop: 8,
+        lineHeight: 23,
+    },
+    nextPlayer: {
+        color: "#FACC15",
+        fontSize: 20,
+        fontWeight: "900",
+        textAlign: "center",
+        marginTop: 12,
+    },
     eyebrow: {
-        color: "#D1D5DB",
-        fontSize: 11,
+        color: "#93C5FD",
+        fontSize: 12,
         fontWeight: "900",
         letterSpacing: 2.5,
         marginBottom: 10,
         textAlign: "center",
     },
     title: {
-        fontSize: 28,
+        fontSize: 34,
         fontWeight: "900",
         textAlign: "center",
     },
@@ -131,6 +206,27 @@ const styles = StyleSheet.create({
         marginTop: 10,
         lineHeight: 23,
     },
+
+    scoreDescriptionRow: {
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "center",
+        flexWrap: "wrap",
+        marginTop: 8,
+        gap: 7,
+    },
+    scoreDescription: {
+        color: "#FFFFFF",
+        fontSize: 16,
+        fontWeight: "700",
+        textAlign: "center",
+        lineHeight: 28,
+    },
+    scoreFaceImage: {
+        width: 27,
+        height: 27,
+    },
+
 });
 
 export default EventBanner;

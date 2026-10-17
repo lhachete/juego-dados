@@ -47,7 +47,7 @@ const VirtualMode = () => {
 
     const [diceResults, setDiceResults] = useState([]);
     const [isRolling, setIsRolling] = useState(false);
-    const [rollsLeft, setRollsLeft] = useState(3);
+    const [rollsLeft, setRollsLeft] = useState(15);
     const [scorePreview, setScorePreview] = useState({
         faces: [],
         total: 0,
@@ -62,11 +62,13 @@ const VirtualMode = () => {
     const lastScoreRef = useRef(null);
     const bannerTimerRef = useRef(null);
 
+
     const showBanner = useCallback((
         title,
         subtitle = "",
         color = "#FACC15",
-        type = "score"
+        type = "score",
+        transition = false
     ) => {
         setBanner({
             id: Date.now(),
@@ -74,8 +76,10 @@ const VirtualMode = () => {
             subtitle,
             color,
             type,
+            transition,
         });
     }, []);
+
 
     const facesToDisable =
         gamePhase === "second"
@@ -259,6 +263,30 @@ const VirtualMode = () => {
 
 
     const confirmScore = () => {
+
+        const nonAces = scorePreview.faces.filter(f => f?.id !== 6);
+
+        const scoredFace =
+            bonusFace?.label ??
+            nonAces[0]?.label ??
+            scorePreview.faces[0]?.label ??
+            zeroFaceSelected?.label ??
+            "figura";
+
+        const baseFaceId =
+            bonusFace?.id ??
+            nonAces[0]?.id ??
+            scorePreview.faces[0]?.id ??
+            6;
+
+        // Cada tirada extra aporta cinco figuras.
+        const bonusFigureCount =
+            baseFaceId > 0 ? bonusPoints / baseFaceId : 0;
+
+        const figureCount =
+            scorePreview.faces.length + bonusFigureCount;
+
+
         if (scorePreview.faces.length === 0 && bonusPoints === 0) {
             if (!zeroFaceSelected) {
                 Alert.alert("Selecciona una figura");
@@ -286,19 +314,11 @@ const VirtualMode = () => {
         setBonusFace(null);
         setIsBonusMode(false);
 
-        const nonAces = scorePreview.faces.filter(f => f?.id !== 6);
-
-        const scoredFace =
-            zeroFaceSelected?.label ??
-            bonusFace?.label ??
-            nonAces[0]?.label ??
-            scorePreview.faces[0]?.label ??
-            "figura";
-
         lastScoreRef.current = {
             player: currentPlayer,
             points: scorePreview.total ?? 0,
             face: scoredFace,
+            faceCount: figureCount,
         };
 
         advanceGame();
@@ -401,6 +421,7 @@ const VirtualMode = () => {
     }, [gamePhase]);
 
 
+
     useEffect(() => {
         const previous = prevTurnRef.current;
 
@@ -416,45 +437,54 @@ const VirtualMode = () => {
 
         if (gamePhase === "finished") return;
 
+        if (bannerTimerRef.current) {
+            clearTimeout(bannerTimerRef.current);
+            bannerTimerRef.current = null;
+        }
+
         const lastScore = lastScoreRef.current;
 
         const hasPreviousScore =
             lastScore && lastScore.player === previous.player;
 
-        const scoreText = hasPreviousScore
-            ? `${lastScore.player} anotó ${lastScore.points} puntos de ${lastScore.face}`
-            : "";
-
-        const showRoundBanner = () => {
+        const showRoundBanner = (transition = false) => {
             showBanner(
                 `RONDA ${round}`,
                 round === 7
                     ? "¡Comienza la segunda fase!"
                     : `Turno de ${currentPlayer}`,
                 "#60A5FA",
-                "round"
+                "round",
+                transition
             );
         };
 
-        // Si cambia la ronda, primero mostramos la puntuación.
+        const showScoreBanner = () => {
+            setBanner({
+                id: Date.now(),
+                type: "score",
+                title: "",
+                points: lastScore.points,
+                player: lastScore.player,
+                face: lastScore.face,
+                faceImage: DADES.find(
+                    face => face.label === lastScore.face
+                )?.img,
+                faceCount: lastScore.faceCount ?? 0,
+                nextPlayer: currentPlayer,
+                color: "#FACC15",
+            });
+        };
+
+        // Cambio de ronda: puntuación primero y transición directa después.
         if (previous.round !== round) {
-            if (bannerTimerRef.current) {
-                clearTimeout(bannerTimerRef.current);
-            }
-
             if (hasPreviousScore) {
-                showBanner(
-                    "RESULTADO DEL TURNO",
-                    `${scoreText}\nTurno de ${currentPlayer}`,
-                    "#FACC15",
-                    "score"
-                );
+                showScoreBanner();
 
-                // Esperamos a que termine la entrada, lectura y salida.
                 bannerTimerRef.current = setTimeout(() => {
-                    showRoundBanner();
+                    showRoundBanner(true);
                     bannerTimerRef.current = null;
-                }, 3300);
+                }, 2600);
             } else {
                 showRoundBanner();
             }
@@ -462,16 +492,17 @@ const VirtualMode = () => {
             return;
         }
 
-        // Cambio normal de jugador: mostramos el resultado.
-        showBanner(
-            "RESULTADO DEL TURNO",
-            [
-                scoreText,
+        // Cambio normal de jugador.
+        if (hasPreviousScore) {
+            showScoreBanner();
+        } else {
+            showBanner(
                 `Turno de ${currentPlayer}`,
-            ].filter(Boolean).join("\n"),
-            "#FACC15",
-            "score"
-        );
+                "",
+                "#FACC15",
+                "turn"
+            );
+        }
     }, [
         turn,
         round,
@@ -479,6 +510,7 @@ const VirtualMode = () => {
         gamePhase,
         showBanner,
     ]);
+
 
 
     useEffect(() => {
