@@ -1,16 +1,5 @@
-import { useState, useEffect, useRef } from "react";
-import { View, Text, Image, TouchableOpacity, Modal, StyleSheet, Alert } from "react-native";
-import Animated, {
-    Easing,
-    cancelAnimation,
-    useAnimatedStyle,
-    useSharedValue,
-    withDelay,
-    withRepeat,
-    withSequence,
-    withSpring,
-    withTiming,
-} from "react-native-reanimated";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { View, Text, Image, TouchableOpacity, Modal, StyleSheet, Alert, Vibration } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { router } from "expo-router";
 import { useGame } from "../contexts/GameContext";
@@ -20,6 +9,9 @@ import FiguresGridModal from "../components/FiguresGridModal";
 import DADES from "./dades.jsx";
 import FiguresGrid from "components/FiguresGrid";
 import SecondPhaseModal from "components/SecondPhaseModal";
+import AnimatedDie from "../components/AnimatedDie";
+import AnimatedRollButton from "../components/AnimatedRollButton";
+import EventBanner from "../components/EventBanner";
 
 const VirtualMode = () => {
     const {
@@ -65,148 +57,24 @@ const VirtualMode = () => {
     const [bonusFace, setBonusFace] = useState(null);
     const [isBonusMode, setIsBonusMode] = useState(false);
 
-    //ANIMATION <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-    const AnimatedDie = ({ face, locked, isRolling, delay = 0, disabled = false }) => {
-        const [displayFace, setDisplayFace] = useState(face ?? null);
-        const intervalRef = useRef(null);
-        const timeoutRef = useRef(null);
+    const [banner, setBanner] = useState(null);
+    const prevTurnRef = useRef(null);
+    const lastScoreRef = useRef(null);
 
-        const rotate = useSharedValue(0);
-        const scale = useSharedValue(1);
-        const translateY = useSharedValue(0);
-
-        useEffect(() => {
-            return () => {
-                if (intervalRef.current) clearInterval(intervalRef.current);
-                if (timeoutRef.current) clearTimeout(timeoutRef.current);
-            };
-        }, []);
-
-        useEffect(() => {
-            if (locked) {
-                if (intervalRef.current) clearInterval(intervalRef.current);
-                if (timeoutRef.current) clearTimeout(timeoutRef.current);
-                setDisplayFace(face ?? null);
-                cancelAnimation(rotate);
-                cancelAnimation(scale);
-                cancelAnimation(translateY);
-                rotate.value = 0;
-                scale.value = 1;
-                translateY.value = 0;
-                return;
-            }
-
-            if (!isRolling) {
-                if (intervalRef.current) clearInterval(intervalRef.current);
-                if (timeoutRef.current) clearTimeout(timeoutRef.current);
-                setDisplayFace(face ?? null);
-                rotate.value = withTiming(0, { duration: 120 });
-                scale.value = withSpring(1, { damping: 10, stiffness: 180 });
-                translateY.value = withSpring(0, { damping: 10, stiffness: 180 });
-                return;
-            }
-
-            intervalRef.current = setInterval(() => {
-                const randomFace = DADES[Math.floor(Math.random() * DADES.length)];
-                setDisplayFace(randomFace);
-            }, 70);
-
-            rotate.value = withDelay(
-                delay,
-                withSequence(
-                    withTiming(-18, { duration: 90, easing: Easing.out(Easing.quad) }),
-                    withRepeat(
-                        withTiming(18, { duration: 100, easing: Easing.linear }),
-                        5,
-                        true
-                    ),
-                    withTiming(0, { duration: 120, easing: Easing.out(Easing.quad) })
-                )
-            );
-
-            scale.value = withDelay(
-                delay,
-                withSequence(
-                    withTiming(0.9, { duration: 100 }),
-                    withTiming(1.08, { duration: 160 }),
-                    withSpring(1, { damping: 8, stiffness: 220 })
-                )
-            );
-
-            translateY.value = withDelay(
-                delay,
-                withSequence(
-                    withTiming(-8, { duration: 130, easing: Easing.out(Easing.quad) }),
-                    withSpring(0, { damping: 7, stiffness: 240 })
-                )
-            );
-
-            timeoutRef.current = setTimeout(() => {
-                if (intervalRef.current) clearInterval(intervalRef.current);
-                setDisplayFace(face ?? null);
-            }, 620 + delay);
-
-            return () => {
-                if (intervalRef.current) clearInterval(intervalRef.current);
-                if (timeoutRef.current) clearTimeout(timeoutRef.current);
-            };
-        }, [isRolling, locked, face, delay]);
-
-        const animatedStyle = useAnimatedStyle(() => ({
-            transform: [
-                { rotate: `${rotate.value}deg` },
-                { scale: scale.value },
-                { translateY: translateY.value },
-            ],
-        }));
-
-        return (
-            <Animated.View
-                style={[
-                    styles.diceWrapper,
-                    locked && styles.diceLocked,
-                    disabled && styles.diceDisabled,
-                    animatedStyle,
-                ]}
-            >
-                {displayFace && (
-                    <Image
-                        source={displayFace.img}
-                        style={styles.diceImg}
-                        resizeMode="contain"
-                    />
-                )}
-            </Animated.View>
-        );
-    };
-
-    // Pulso suave al boton de tirar
-    const rollBtnScale = useSharedValue(1);
-
-    useEffect(() => {
-        if (isRolling || rollsLeft === 0) {
-            cancelAnimation(rollBtnScale);
-            rollBtnScale.value = withTiming(1, { duration: 120 });
-            return;
-        }
-
-        rollBtnScale.value = withRepeat(
-            withSequence(
-                withTiming(1.04, { duration: 900 }),
-                withTiming(1, { duration: 900 })
-            ),
-            -1,
-            false
-        );
-
-        return () => cancelAnimation(rollBtnScale);
-    }, [isRolling, rollsLeft, isBonusMode]);
-
-    const rollBtnAnimatedStyle = useAnimatedStyle(() => ({
-        transform: [{ scale: rollBtnScale.value }],
-    }));
-
-    //FIN ANIMATION <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+    const showBanner = useCallback((
+        title,
+        subtitle = "",
+        color = "#FACC15",
+        type = "score"
+    ) => {
+        setBanner({
+            id: Date.now(),
+            title,
+            subtitle,
+            color,
+            type,
+        });
+    }, []);
 
     const facesToDisable =
         gamePhase === "second"
@@ -246,7 +114,7 @@ const VirtualMode = () => {
             };
         });
 
-        await new Promise((resolve) => setTimeout(resolve, 850));
+        await new Promise((resolve) => setTimeout(resolve, 950));
 
         setDiceResults(finalDice);
         setRollsLeft((prev) => prev - 1);
@@ -416,6 +284,22 @@ const VirtualMode = () => {
         setBonusPoints(0);
         setBonusFace(null);
         setIsBonusMode(false);
+
+        const nonAces = scorePreview.faces.filter(f => f?.id !== 6);
+
+        const scoredFace =
+            zeroFaceSelected?.label ??
+            bonusFace?.label ??
+            nonAces[0]?.label ??
+            scorePreview.faces[0]?.label ??
+            "figura";
+
+        lastScoreRef.current = {
+            player: currentPlayer,
+            points: scorePreview.total ?? 0,
+            face: scoredFace,
+        };
+
         advanceGame();
     };
 
@@ -515,6 +399,66 @@ const VirtualMode = () => {
         }
     }, [gamePhase]);
 
+    useEffect(() => {
+        const previous = prevTurnRef.current;
+
+        // Guardamos el estado actual para compararlo después.
+        prevTurnRef.current = {
+            turn,
+            round,
+            player: currentPlayer,
+        };
+
+        // No mostramos avisos al cargar por primera vez.
+        if (previous === null) return;
+
+        // Si no ha cambiado el turno ni la ronda, no hacemos nada.
+        if (previous.turn === turn && previous.round === round) return;
+
+        // No mostramos avisos al terminar la partida.
+        if (gamePhase === "finished") return;
+
+        // CAMBIO REAL DE RONDA: mostramos un aviso especial.
+        if (previous.round !== round) {
+            showBanner(
+                `RONDA ${round}`,
+                round === 7
+                    ? "¡Comienza la segunda fase!"
+                    : `Turno de ${currentPlayer}`,
+                "#60A5FA",
+                "round"
+            );
+
+            return;
+        }
+
+        // CAMBIO DE JUGADOR: mostramos puntuación y siguiente turno.
+        const lastScore = lastScoreRef.current;
+
+        const scoreText =
+            lastScore && lastScore.player === previous.player
+                ? `${lastScore.player} anotó ${lastScore.points} puntos de ${lastScore.face}`
+                : "";
+
+        const subtitle = [
+            scoreText,
+            `Turno de ${currentPlayer}`,
+        ].filter(Boolean).join("\n");
+
+        showBanner(
+            "RESULTADO DEL TURNO",
+            subtitle,
+            "#FACC15",
+            "score"
+        );
+    }, [
+        turn,
+        round,
+        currentPlayer,
+        gamePhase,
+        showBanner,
+    ]);
+
 
     return (
         <View style={styles.container}>
@@ -573,6 +517,7 @@ const VirtualMode = () => {
                             >
                                 <AnimatedDie
                                     face={die.face}
+                                    faces={DADES}
                                     locked={die.locked}
                                     isRolling={isRolling && !die.locked}
                                     delay={index * 70}
@@ -589,26 +534,24 @@ const VirtualMode = () => {
                         Tiradas restantes: {rollsLeft}
                     </Text>
 
-                    <Animated.View style={rollBtnAnimatedStyle}>
-                        <TouchableOpacity
-                            style={styles.rollBtn}
-                            onPress={
-                                isBonusMode
-                                    ? handleBonusRoll
-                                    : rollsLeft === 0
-                                        ? handleScoreSelection
-                                        : rollDice
-                            }
-                        >
-                            <Text style={styles.rollBtnText}>
-                                {isBonusMode
-                                    ? "+ Tirar dados +"
-                                    : rollsLeft === 0
-                                        ? "Anotar puntos"
-                                        : "Tirar dados"}
-                            </Text>
-                        </TouchableOpacity>
-                    </Animated.View>
+                    <AnimatedRollButton
+                        isRolling={isRolling}
+                        rollsLeft={rollsLeft}
+                        onPress={
+                            isBonusMode
+                                ? handleBonusRoll
+                                : rollsLeft === 0
+                                    ? handleScoreSelection
+                                    : rollDice
+                        }
+                        title={
+                            isBonusMode
+                                ? "+ Tirar dados +"
+                                : rollsLeft === 0
+                                    ? "Anotar puntos"
+                                    : "Tirar dados"
+                        }
+                    />
                 </View>
             </View>
 
@@ -738,6 +681,8 @@ const VirtualMode = () => {
                     router.replace("/end-game");
                 }}
             />
+
+            <EventBanner event={banner} />
         </View>
     );
 };
@@ -838,33 +783,12 @@ const styles = StyleSheet.create({
         textDecorationLine: "underline",
     },
 
-    rollBtn: {
-        marginTop: 20,
-        paddingVertical: 14,
-        paddingHorizontal: 40,
-        backgroundColor: "#FACC15",
-        borderRadius: 12,
-
-    },
-
-    rollBtnText: {
-        color: "#1F2937",
-        fontSize: 18,
-        fontWeight: "700",
-    },
-
     diceRow: {
         flexDirection: "row",
         justifyContent: "center",
         flexWrap: "wrap",
         marginTop: 20,
         gap: 12,
-    },
-
-    diceImg: {
-        width: 100,
-        height: 100,
-        margin: 12,
     },
 
     rollsText: {
@@ -876,17 +800,6 @@ const styles = StyleSheet.create({
         color: "#FACC15",
         fontSize: 16,
         alignSelf: "center",
-    },
-
-    diceWrapper: {
-        borderWidth: 2,
-        borderColor: "transparent",
-        borderRadius: 12,
-        backgroundColor: "transparent",
-    },
-
-    diceLocked: {
-        borderColor: "#FACC15",
     },
 
     modalBackdrop: {
@@ -947,12 +860,7 @@ const styles = StyleSheet.create({
         color: "#F87171",
         fontSize: 18,
     },
-    disabledBtn: {
-        opacity: 0.4,
-    },
-    diceDisabled: {
-        opacity: 0.4,
-    },
+
     modalBonus: {
         color: "#34D399",
         fontSize: 17,
