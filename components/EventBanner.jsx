@@ -64,13 +64,11 @@ const EventBanner = ({ event }) => {
                 ]}
             />
 
-            <Text style={styles.eyebrow}>
-                {isRound
-                    ? "⚔️ NUEVA RONDA"
-                    : isTurn
-                        ? "🎲 CAMBIO DE TURNO"
-                        : "RESULTADO DEL TURNO"}
-            </Text>
+            {(isRound || isTurn) && (
+                <Text style={styles.eyebrow}>
+                    {isRound ? "⚔️ NUEVA RONDA" : "🎲 CAMBIO DE TURNO"}
+                </Text>
+            )}
 
             <Text style={[styles.title, { color }]}>
                 {event.title}

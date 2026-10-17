@@ -60,6 +60,7 @@ const VirtualMode = () => {
     const [banner, setBanner] = useState(null);
     const prevTurnRef = useRef(null);
     const lastScoreRef = useRef(null);
+    const bannerTimerRef = useRef(null);
 
     const showBanner = useCallback((
         title,
@@ -399,27 +400,32 @@ const VirtualMode = () => {
         }
     }, [gamePhase]);
 
+
     useEffect(() => {
         const previous = prevTurnRef.current;
 
-        // Guardamos el estado actual para compararlo después.
         prevTurnRef.current = {
             turn,
             round,
             player: currentPlayer,
         };
 
-        // No mostramos avisos al cargar por primera vez.
         if (previous === null) return;
 
-        // Si no ha cambiado el turno ni la ronda, no hacemos nada.
         if (previous.turn === turn && previous.round === round) return;
 
-        // No mostramos avisos al terminar la partida.
         if (gamePhase === "finished") return;
 
-        // CAMBIO REAL DE RONDA: mostramos un aviso especial.
-        if (previous.round !== round) {
+        const lastScore = lastScoreRef.current;
+
+        const hasPreviousScore =
+            lastScore && lastScore.player === previous.player;
+
+        const scoreText = hasPreviousScore
+            ? `${lastScore.player} anotó ${lastScore.points} puntos de ${lastScore.face}`
+            : "";
+
+        const showRoundBanner = () => {
             showBanner(
                 `RONDA ${round}`,
                 round === 7
@@ -428,26 +434,41 @@ const VirtualMode = () => {
                 "#60A5FA",
                 "round"
             );
+        };
+
+        // Si cambia la ronda, primero mostramos la puntuación.
+        if (previous.round !== round) {
+            if (bannerTimerRef.current) {
+                clearTimeout(bannerTimerRef.current);
+            }
+
+            if (hasPreviousScore) {
+                showBanner(
+                    "RESULTADO DEL TURNO",
+                    `${scoreText}\nTurno de ${currentPlayer}`,
+                    "#FACC15",
+                    "score"
+                );
+
+                // Esperamos a que termine la entrada, lectura y salida.
+                bannerTimerRef.current = setTimeout(() => {
+                    showRoundBanner();
+                    bannerTimerRef.current = null;
+                }, 3300);
+            } else {
+                showRoundBanner();
+            }
 
             return;
         }
 
-        // CAMBIO DE JUGADOR: mostramos puntuación y siguiente turno.
-        const lastScore = lastScoreRef.current;
-
-        const scoreText =
-            lastScore && lastScore.player === previous.player
-                ? `${lastScore.player} anotó ${lastScore.points} puntos de ${lastScore.face}`
-                : "";
-
-        const subtitle = [
-            scoreText,
-            `Turno de ${currentPlayer}`,
-        ].filter(Boolean).join("\n");
-
+        // Cambio normal de jugador: mostramos el resultado.
         showBanner(
             "RESULTADO DEL TURNO",
-            subtitle,
+            [
+                scoreText,
+                `Turno de ${currentPlayer}`,
+            ].filter(Boolean).join("\n"),
             "#FACC15",
             "score"
         );
@@ -458,6 +479,15 @@ const VirtualMode = () => {
         gamePhase,
         showBanner,
     ]);
+
+
+    useEffect(() => {
+        return () => {
+            if (bannerTimerRef.current) {
+                clearTimeout(bannerTimerRef.current);
+            }
+        };
+    }, []);
 
 
     return (
