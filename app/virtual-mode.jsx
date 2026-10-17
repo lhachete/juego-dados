@@ -1,5 +1,16 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { View, Text, Image, TouchableOpacity, Modal, StyleSheet, Alert } from "react-native";
+import Animated, {
+    Easing,
+    cancelAnimation,
+    useAnimatedStyle,
+    useSharedValue,
+    withDelay,
+    withRepeat,
+    withSequence,
+    withSpring,
+    withTiming,
+} from "react-native-reanimated";
 import { useNavigation } from "@react-navigation/native";
 import { router } from "expo-router";
 import { useGame } from "../contexts/GameContext";
@@ -54,6 +65,149 @@ const VirtualMode = () => {
     const [bonusFace, setBonusFace] = useState(null);
     const [isBonusMode, setIsBonusMode] = useState(false);
 
+    //ANIMATION <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+    const AnimatedDie = ({ face, locked, isRolling, delay = 0, disabled = false }) => {
+        const [displayFace, setDisplayFace] = useState(face ?? null);
+        const intervalRef = useRef(null);
+        const timeoutRef = useRef(null);
+
+        const rotate = useSharedValue(0);
+        const scale = useSharedValue(1);
+        const translateY = useSharedValue(0);
+
+        useEffect(() => {
+            return () => {
+                if (intervalRef.current) clearInterval(intervalRef.current);
+                if (timeoutRef.current) clearTimeout(timeoutRef.current);
+            };
+        }, []);
+
+        useEffect(() => {
+            if (locked) {
+                if (intervalRef.current) clearInterval(intervalRef.current);
+                if (timeoutRef.current) clearTimeout(timeoutRef.current);
+                setDisplayFace(face ?? null);
+                cancelAnimation(rotate);
+                cancelAnimation(scale);
+                cancelAnimation(translateY);
+                rotate.value = 0;
+                scale.value = 1;
+                translateY.value = 0;
+                return;
+            }
+
+            if (!isRolling) {
+                if (intervalRef.current) clearInterval(intervalRef.current);
+                if (timeoutRef.current) clearTimeout(timeoutRef.current);
+                setDisplayFace(face ?? null);
+                rotate.value = withTiming(0, { duration: 120 });
+                scale.value = withSpring(1, { damping: 10, stiffness: 180 });
+                translateY.value = withSpring(0, { damping: 10, stiffness: 180 });
+                return;
+            }
+
+            intervalRef.current = setInterval(() => {
+                const randomFace = DADES[Math.floor(Math.random() * DADES.length)];
+                setDisplayFace(randomFace);
+            }, 70);
+
+            rotate.value = withDelay(
+                delay,
+                withSequence(
+                    withTiming(-18, { duration: 90, easing: Easing.out(Easing.quad) }),
+                    withRepeat(
+                        withTiming(18, { duration: 100, easing: Easing.linear }),
+                        5,
+                        true
+                    ),
+                    withTiming(0, { duration: 120, easing: Easing.out(Easing.quad) })
+                )
+            );
+
+            scale.value = withDelay(
+                delay,
+                withSequence(
+                    withTiming(0.9, { duration: 100 }),
+                    withTiming(1.08, { duration: 160 }),
+                    withSpring(1, { damping: 8, stiffness: 220 })
+                )
+            );
+
+            translateY.value = withDelay(
+                delay,
+                withSequence(
+                    withTiming(-8, { duration: 130, easing: Easing.out(Easing.quad) }),
+                    withSpring(0, { damping: 7, stiffness: 240 })
+                )
+            );
+
+            timeoutRef.current = setTimeout(() => {
+                if (intervalRef.current) clearInterval(intervalRef.current);
+                setDisplayFace(face ?? null);
+            }, 620 + delay);
+
+            return () => {
+                if (intervalRef.current) clearInterval(intervalRef.current);
+                if (timeoutRef.current) clearTimeout(timeoutRef.current);
+            };
+        }, [isRolling, locked, face, delay]);
+
+        const animatedStyle = useAnimatedStyle(() => ({
+            transform: [
+                { rotate: `${rotate.value}deg` },
+                { scale: scale.value },
+                { translateY: translateY.value },
+            ],
+        }));
+
+        return (
+            <Animated.View
+                style={[
+                    styles.diceWrapper,
+                    locked && styles.diceLocked,
+                    disabled && styles.diceDisabled,
+                    animatedStyle,
+                ]}
+            >
+                {displayFace && (
+                    <Image
+                        source={displayFace.img}
+                        style={styles.diceImg}
+                        resizeMode="contain"
+                    />
+                )}
+            </Animated.View>
+        );
+    };
+
+    // Pulso suave al boton de tirar
+    const rollBtnScale = useSharedValue(1);
+
+    useEffect(() => {
+        if (isRolling || rollsLeft === 0) {
+            cancelAnimation(rollBtnScale);
+            rollBtnScale.value = withTiming(1, { duration: 120 });
+            return;
+        }
+
+        rollBtnScale.value = withRepeat(
+            withSequence(
+                withTiming(1.04, { duration: 900 }),
+                withTiming(1, { duration: 900 })
+            ),
+            -1,
+            false
+        );
+
+        return () => cancelAnimation(rollBtnScale);
+    }, [isRolling, rollsLeft, isBonusMode]);
+
+    const rollBtnAnimatedStyle = useAnimatedStyle(() => ({
+        transform: [{ scale: rollBtnScale.value }],
+    }));
+
+    //FIN ANIMATION <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
     const facesToDisable =
         gamePhase === "second"
             ? disabledFaces[currentPlayer] || []
@@ -69,9 +223,10 @@ const VirtualMode = () => {
 
     const rollDice = async () => {
         if (isRolling || rollsLeft === 0) return;
+
         setIsRolling(true);
 
-        let newDice =
+        const currentDice =
             diceResults.length === 0
                 ? Array.from({ length: 5 }, () => ({
                     value: null,
@@ -80,25 +235,24 @@ const VirtualMode = () => {
                 }))
                 : [...diceResults];
 
-        for (let i = 0; i < 5; i++) {
-            if (newDice[i].locked) continue;
+        const finalDice = currentDice.map((die) => {
+            if (die.locked) return die;
 
-            const randomFace =
-                DADES[Math.floor(Math.random() * DADES.length)];
-
-            await new Promise((resolve) => setTimeout(resolve, 300));
-
-            newDice[i] = {
+            const randomFace = DADES[Math.floor(Math.random() * DADES.length)];
+            return {
                 value: randomFace.id,
                 face: randomFace,
                 locked: false,
             };
-            setDiceResults([...newDice]);
-        }
+        });
 
+        await new Promise((resolve) => setTimeout(resolve, 850));
+
+        setDiceResults(finalDice);
         setRollsLeft((prev) => prev - 1);
         setIsRolling(false);
     };
+
 
 
     const lockDices = (index) => {
@@ -251,7 +405,7 @@ const VirtualMode = () => {
 
             const nonAces = scorePreview.faces.filter(f => f?.id !== 6);
             const faceId = bonusFace?.id ??
-    (nonAces.length > 0 ? nonAces[0].id : 6);
+                (nonAces.length > 0 ? nonAces[0].id : 6);
 
             addUsedFace(currentPlayer, faceId);
         }
@@ -266,29 +420,27 @@ const VirtualMode = () => {
     };
 
     const handleBonusRoll = async () => {
-        if (isRolling || rollsLeft === 0) return;
-
-        setIsRolling(true);
+        if (isRolling || rollsLeft === 0 || !bonusFace) return;
 
         const baseValue = bonusFace.id;
-        setBonusPoints(prev => prev + (5 * baseValue));
-
-        let newDice = Array.from({ length: 5 }, () => {
-            const randomFace =
-                DADES[Math.floor(Math.random() * DADES.length)];
-
-            return {
-                value: randomFace.id,
-                face: randomFace,
-                locked: false,
-            };
+        const newDice = Array.from({ length: 5 }, () => {
+            const face = DADES[Math.floor(Math.random() * DADES.length)];
+            return { value: face.id, face, locked: false };
         });
 
-        setDiceResults(newDice);
-        setRollsLeft(prev => prev - 1);
+        // La animación solo se ejecuta en dados no bloqueados.
+        setDiceResults(prev => prev.map(die => ({ ...die, locked: false })));
         setIsBonusMode(false);
+        setIsRolling(true);
+
+        await new Promise(resolve => setTimeout(resolve, 760));
+
+        setDiceResults(newDice);
+        setBonusPoints(prev => prev + 5 * baseValue);
+        setRollsLeft(prev => prev - 1);
         setIsRolling(false);
     };
+
 
 
 
@@ -320,7 +472,7 @@ const VirtualMode = () => {
 
 
     useEffect(() => {
-        if (rollsLeft === 0) return; 
+        if (rollsLeft === 0) return;
 
         const selected = diceResults.filter(d => d.locked);
         if (selected.length !== 5) {
@@ -405,31 +557,31 @@ const VirtualMode = () => {
 
                 <View style={styles.middleArea}>
                     <View style={styles.diceRow}>
-                        {diceResults.map((die, index) => (
-
+                        {(diceResults.length === 0
+                            ? Array.from({ length: 5 }, () => ({
+                                value: null,
+                                face: null,
+                                locked: false,
+                            }))
+                            : diceResults
+                        ).map((die, index) => (
                             <TouchableOpacity
                                 key={index}
                                 onPress={() => lockDices(index)}
                                 disabled={isDiceDisabled(die)}
+                                activeOpacity={0.85}
                             >
-                                <View
-                                    style={[
-                                        styles.diceWrapper,
-                                        die.locked && styles.diceLocked,
-                                        isDiceDisabled(die) && styles.diceDisabled,
-                                    ]}
-                                >
-                                    {die.face && (
-                                        <Image
-                                            source={die.face.img}
-                                            style={styles.diceImg}
-                                            resizeMode="contain"
-                                        />
-                                    )}
-                                </View>
+                                <AnimatedDie
+                                    face={die.face}
+                                    locked={die.locked}
+                                    isRolling={isRolling && !die.locked}
+                                    delay={index * 70}
+                                    disabled={isDiceDisabled(die)}
+                                />
                             </TouchableOpacity>
                         ))}
                     </View>
+
                 </View>
 
                 <View style={styles.bottomArea}>
@@ -437,24 +589,26 @@ const VirtualMode = () => {
                         Tiradas restantes: {rollsLeft}
                     </Text>
 
-                    <TouchableOpacity
-                        style={styles.rollBtn}
-                        onPress={
-                            isBonusMode
-                                ? handleBonusRoll
-                                : rollsLeft === 0
-                                    ? handleScoreSelection
-                                    : rollDice
-                        }
-                    >
-                        <Text style={styles.rollBtnText}>
-                            {isBonusMode
-                                ? "+ Tirar dados +"
-                                : rollsLeft === 0
-                                    ? "Anotar puntos"
-                                    : "Tirar dados"}
-                        </Text>
-                    </TouchableOpacity>
+                    <Animated.View style={rollBtnAnimatedStyle}>
+                        <TouchableOpacity
+                            style={styles.rollBtn}
+                            onPress={
+                                isBonusMode
+                                    ? handleBonusRoll
+                                    : rollsLeft === 0
+                                        ? handleScoreSelection
+                                        : rollDice
+                            }
+                        >
+                            <Text style={styles.rollBtnText}>
+                                {isBonusMode
+                                    ? "+ Tirar dados +"
+                                    : rollsLeft === 0
+                                        ? "Anotar puntos"
+                                        : "Tirar dados"}
+                            </Text>
+                        </TouchableOpacity>
+                    </Animated.View>
                 </View>
             </View>
 
@@ -728,6 +882,7 @@ const styles = StyleSheet.create({
         borderWidth: 2,
         borderColor: "transparent",
         borderRadius: 12,
+        backgroundColor: "transparent",
     },
 
     diceLocked: {
