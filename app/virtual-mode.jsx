@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { View, Text, Image, TouchableOpacity, Modal, StyleSheet, Alert, Vibration } from "react-native";
+import { View, Text, Image, TouchableOpacity, Pressable, Modal, StyleSheet, Alert, Vibration } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { router } from "expo-router";
 import { useGame } from "../contexts/GameContext";
@@ -385,6 +385,9 @@ const VirtualMode = () => {
         const selected = diceResults.filter(d => d.locked);
         if (selected.length !== 5) {
             setIsBonusMode(false);
+            // Si aún no se ha usado la tirada extra, la figura de bonus deja
+            // de valer al soltar un dado (si no, se quedaba "pegada").
+            if (bonusPoints === 0) setBonusFace(null);
             return;
         }
 
@@ -403,6 +406,7 @@ const VirtualMode = () => {
             setBonusFace(baseFace);
         } else {
             setIsBonusMode(false);
+            if (bonusPoints === 0) setBonusFace(null);
         }
 
     }, [diceResults]);
@@ -593,11 +597,14 @@ const VirtualMode = () => {
                             }))
                             : diceResults
                         ).map((die, index) => (
-                            <TouchableOpacity
+                            // Pressable en vez de TouchableOpacity: la opacidad animada
+                            // de TouchableOpacity (Animated nativo) se mezclaba con las
+                            // animaciones de Reanimated del dado y provocaba el error
+                            // "disconnectAnimatedNodeFromView" al cambiar `disabled`.
+                            <Pressable
                                 key={index}
                                 onPress={() => lockDices(index)}
                                 disabled={isDiceDisabled(die)}
-                                activeOpacity={0.85}
                             >
                                 <AnimatedDie
                                     face={die.face}
@@ -607,7 +614,7 @@ const VirtualMode = () => {
                                     delay={index * 70}
                                     disabled={isDiceDisabled(die)}
                                 />
-                            </TouchableOpacity>
+                            </Pressable>
                         ))}
                     </View>
 

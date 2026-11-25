@@ -60,6 +60,12 @@ export const GameProvider = ({ children }) => {
     setRound(1);
     setSecondPhaseOrder([]);
     setSecondPhaseStep(0);
+    // Sin esto la fase se quedaba en "finished" y la siguiente partida
+    // saltaba directamente a end-game.
+    setGamePhase("first");
+    setIsGameStarted(false);
+    setUsedFaces({});
+    setDisabledFaces({});
   };
 
   const resetGame = () => {

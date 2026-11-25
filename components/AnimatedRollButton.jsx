@@ -1,6 +1,6 @@
 
 import { useEffect } from "react";
-import { TouchableOpacity, Text, StyleSheet } from "react-native";
+import { Pressable, Text, StyleSheet } from "react-native";
 import Animated, {
     cancelAnimation,
     useAnimatedStyle,
@@ -49,19 +49,22 @@ const AnimatedRollButton = ({
 
     return (
         <Animated.View style={rollBtnAnimatedStyle}>
-            <TouchableOpacity
+            {/* Pressable: TouchableOpacity usa Animated nativo y dentro de una
+                vista de Reanimated puede dar "disconnectAnimatedNodeFromView". */}
+            {/* Estilo en un array fijo: NativeWind no aplica bien el estilo
+                en forma de función ({ pressed }) => ... sobre Pressable. */}
+            <Pressable
                 style={[
                     styles.rollBtn,
                     disabled && styles.disabledBtn,
                 ]}
                 onPress={onPress}
                 disabled={disabled}
-                activeOpacity={0.85}
             >
                 <Text style={styles.rollBtnText}>
                     {title}
                 </Text>
-            </TouchableOpacity>
+            </Pressable>
         </Animated.View>
     );
 };
