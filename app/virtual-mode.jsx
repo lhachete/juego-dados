@@ -47,7 +47,7 @@ const VirtualMode = () => {
 
     const [diceResults, setDiceResults] = useState([]);
     const [isRolling, setIsRolling] = useState(false);
-    const [rollsLeft, setRollsLeft] = useState(15);
+    const [rollsLeft, setRollsLeft] = useState(3);
     const [scorePreview, setScorePreview] = useState({
         faces: [],
         total: 0,

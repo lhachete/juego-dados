@@ -25,7 +25,7 @@ const Index = () => {
             />
 
             {/* Botón Reglas solo texto subrayado */}
-            <TextButton title="Reglas" onPress={() => console.log("Reglas presionado")} />
+            <TextButton title="Reglas" onPress={() => router.push("/rules")} />
 
         </View>
     );
