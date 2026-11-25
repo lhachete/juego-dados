@@ -113,7 +113,7 @@ const EventBanner = ({ event }) => {
             ) : (
                 <>
                     <Text style={styles.eyebrow}>
-                        {isRound ? "⚔️ NUEVA RONDA ⚔️" : event.title}
+                        {isRound ? (event.eyebrow ?? "⚔️ NUEVA RONDA ⚔️") : event.title}
                     </Text>
 
                     <Text
@@ -150,6 +150,7 @@ const styles = StyleSheet.create({
         borderTopWidth: 2,
         borderBottomWidth: 2,
         elevation: 15,
+        zIndex: 100,
         shadowColor: "#000",
         shadowOffset: { width: 0, height: 5 },
         shadowOpacity: 0.45,

@@ -44,6 +44,9 @@ const VirtualMode = () => {
     const [confirmModalVisible, setConfirmModalVisible] = useState(false);
     const [phaseModalVisible, setPhaseModalVisible] = useState(false);
     const [zeroFaceSelected, setZeroFaceSelected] = useState(null);
+    // true desde que acaba la ronda 6 hasta que se elige Negras/Ases:
+    // mientras tanto no se puede tirar.
+    const [awaitingPhaseChoice, setAwaitingPhaseChoice] = useState(false);
 
     const [diceResults, setDiceResults] = useState([]);
     const [isRolling, setIsRolling] = useState(false);
@@ -411,9 +414,9 @@ const VirtualMode = () => {
 
 
     useEffect(() => {
-        if (gamePhase === "second") {
-            setPhaseModalVisible(true);
-        } else if (gamePhase === "finished") {
+        // El modal de la segunda tanda se abre desde el efecto de turnos,
+        // cuando termina el banner de puntos del último jugador de la ronda 6.
+        if (gamePhase === "finished") {
             resetGame();
             finishGame();
             router.replace("/end-game");
@@ -447,6 +450,7 @@ const VirtualMode = () => {
         const hasPreviousScore =
             lastScore && lastScore.player === previous.player;
 
+
         const showRoundBanner = (transition = false) => {
             showBanner(
                 `RONDA ${round}`,
@@ -475,6 +479,24 @@ const VirtualMode = () => {
                 color: "#FACC15",
             });
         };
+
+        // Paso a la segunda tanda (ronda 6 → 7): primero el banner de puntos
+        // del último jugador y, cuando se va, el modal de elegir Negras/Ases.
+        // El banner de inicio de la segunda tanda se lanza al elegir opción.
+        if (previous.round !== round && round === 7) {
+            setAwaitingPhaseChoice(true);
+            if (hasPreviousScore) {
+                showScoreBanner();
+                bannerTimerRef.current = setTimeout(() => {
+                    setPhaseModalVisible(true);
+                    bannerTimerRef.current = null;
+                }, 3250); // 600 entrada + 2000 visible + 600 salida + margen
+            } else {
+                setBanner(null);
+                setPhaseModalVisible(true);
+            }
+            return;
+        }
 
         // Cambio de ronda: puntuación primero y transición directa después.
         if (previous.round !== round) {
@@ -600,7 +622,9 @@ const VirtualMode = () => {
                         isRolling={isRolling}
                         rollsLeft={rollsLeft}
                         onPress={
-                            isBonusMode
+                            awaitingPhaseChoice
+                                ? () => {}
+                                : isBonusMode
                                 ? handleBonusRoll
                                 : rollsLeft === 0
                                     ? handleScoreSelection
@@ -724,6 +748,15 @@ const VirtualMode = () => {
                 onSelect={(type) => {
                     startSecondPhase(type);
                     setPhaseModalVisible(false);
+                    setAwaitingPhaseChoice(false);
+                    setBanner({
+                        id: Date.now(),
+                        type: "round",
+                        eyebrow: "⚔️ RONDA 7 ⚔️",
+                        title: "SEGUNDA TANDA",
+                        subtitle: `Empieza por ${type === "negras" ? "Negras" : "Ases"} · Turno de ${currentPlayer}`,
+                        color: "#60A5FA",
+                    });
                 }}
             />
 
@@ -744,6 +777,12 @@ const VirtualMode = () => {
                 }}
             />
 
+            {/* Entre el final de la ronda 6 y la elección Negras/Ases:
+                oscurece la pantalla y bloquea todos los toques. */}
+            {awaitingPhaseChoice && (
+                <View style={styles.blockOverlay} pointerEvents="auto" />
+            )}
+
             <EventBanner event={banner} />
         </View>
     );
@@ -753,6 +792,12 @@ export default VirtualMode;
 
 
 const styles = StyleSheet.create({
+    blockOverlay: {
+        ...StyleSheet.absoluteFillObject,
+        backgroundColor: "rgba(0, 0, 0, 0.65)",
+        zIndex: 50,
+        elevation: 10, // Android: por encima de la interfaz, por debajo del banner (15)
+    },
     container: {
         flex: 1,
         backgroundColor: "#111827",
