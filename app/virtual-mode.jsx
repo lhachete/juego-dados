@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { View, Text, Image, Pressable, Modal, StyleSheet, Alert, Vibration } from "react-native";
+import Touchable from "../components/Touchable";
 import { useNavigation } from "@react-navigation/native";
 import { router } from "expo-router";
 import { useGame } from "../contexts/GameContext";
@@ -9,7 +10,6 @@ import FiguresGridModal from "../components/FiguresGridModal";
 import DADES from "./dades.jsx";
 import FiguresGrid from "components/FiguresGrid";
 import SecondPhaseModal from "components/SecondPhaseModal";
-import TouchableOpacity from "../components/Touchable";
 import AnimatedDie, { DIE_ROLL_DURATION } from "../components/AnimatedDie";
 
 // Retardo entre dado y dado al tirar (ms) y duración total de la tirada.
@@ -65,7 +65,7 @@ const VirtualMode = () => {
 
     const [diceResults, setDiceResults] = useState([]);
     const [isRolling, setIsRolling] = useState(false);
-    const [rollsLeft, setRollsLeft] = useState(3);
+    const [rollsLeft, setRollsLeft] = useState(15);
     const [scorePreview, setScorePreview] = useState({
         faces: [],
         total: 0,
@@ -168,6 +168,34 @@ const VirtualMode = () => {
     };
 
 
+    // --- Selección automática de dados ---
+    // Figura a la que el jugador está obligado a ir, o null si puede elegir:
+    //  - En la tirada bonus (y las siguientes tras ella): la figura del bonus.
+    //  - En la segunda tanda: la única figura activa de la ronda.
+    const getForcedFaceId = (inBonus) => {
+        if (inBonus && bonusFace) return bonusFace.id;
+        if (gamePhase === "second") {
+            const blocked = disabledFaces[currentPlayer] || [];
+            const active = DADES.map(f => f.id).filter(id => !blocked.includes(id));
+            return active.length === 1 ? active[0] : null;
+        }
+        return null;
+    };
+
+    // Marca solos los dados de la figura obligada. El A (comodín) se marca solo
+    // si esa figura está en la jugada (regla del comodín). En el bonus el A se
+    // marca siempre, igual que permite la selección manual en el bonus.
+    const applyAutoLock = (dice, targetId, acesAlways = false) => {
+        if (!targetId) return dice;
+        const hasTarget = dice.some(d => d.face?.id === targetId);
+        return dice.map(d => {
+            if (!d.face) return d;
+            const isTarget = d.face.id === targetId;
+            const isWildAce = d.face.id === 6 && (acesAlways || hasTarget);
+            return isTarget || isWildAce ? { ...d, locked: true } : d;
+        });
+    };
+
     const rollDice = async () => {
         if (isRolling || rollsLeft === 0) return;
 
@@ -199,6 +227,13 @@ const VirtualMode = () => {
         setDiceResults(finalDice);
 
         await new Promise((resolve) => setTimeout(resolve, ROLL_TOTAL_MS));
+
+        // Ya han acabado de girar: se marcan solos los dados obligados.
+        const inBonus = bonusPoints > 0;
+        const forcedId = getForcedFaceId(inBonus);
+        if (forcedId) {
+            setDiceResults(prev => applyAutoLock(prev, forcedId, inBonus));
+        }
 
         setRollsLeft((prev) => prev - 1);
         setIsRolling(false);
@@ -311,8 +346,10 @@ const VirtualMode = () => {
         const baseValue = baseFaceId;
 
         if (used.includes(baseFaceId)) {
+            // Etiqueta sacada del id: `faces` puede estar vacío (bonus sin dados
+            // seleccionados) y faces[0].label rompía la app.
             const faceLabel =
-                nonAces.length > 0 ? nonAces[0].label : faces[0].label;
+                DADES.find(f => f.id === baseFaceId)?.label ?? "esa figura";
 
             if (gamePhase === "second") {
                 Alert.alert(
@@ -386,7 +423,7 @@ const VirtualMode = () => {
         }
 
         setDiceResults([]);
-        setRollsLeft(3);
+        setRollsLeft(15);
         setConfirmModalVisible(false);
         setBonusPoints(0);
         setBonusFace(null);
@@ -420,6 +457,9 @@ const VirtualMode = () => {
 
         await new Promise(resolve => setTimeout(resolve, ROLL_TOTAL_MS));
 
+        // Tras la animación, se marcan solas las figuras del bonus (y los A).
+        setDiceResults(prev => applyAutoLock(prev, bonusFace.id, true));
+
         setRollsLeft(prev => prev - 1);
         setIsRolling(false);
     };
@@ -447,8 +487,16 @@ const VirtualMode = () => {
 
     useEffect(() => {
         if (rollsLeft === 0) {
+            // Se sueltan todos para elegir qué anotar, pero si hay figura
+            // obligada se vuelven a marcar solos sus dados.
+            const inBonus = bonusPoints > 0;
+            const forcedId = getForcedFaceId(inBonus);
             setDiceResults(prev =>
-                prev.map(die => ({ ...die, locked: false }))
+                applyAutoLock(
+                    prev.map(die => ({ ...die, locked: false })),
+                    forcedId,
+                    inBonus
+                )
             );
         }
     }, [rollsLeft]);
@@ -476,7 +524,12 @@ const VirtualMode = () => {
             f.id === baseId || f.id === 6
         );
 
-        if (allSame) {
+        // No hay tirada extra con una figura que el jugador ya no puede anotar
+        // (ya anotada en la 1ª tanda, o no activa en la 2ª). Antes se activaba,
+        // y luego no había forma de anotar y la partida se quedaba atascada.
+        const canScoreBase = !facesToDisable.includes(baseId);
+
+        if (allSame && canScoreBase) {
             setIsBonusMode(true);
             setBonusFace(baseFace);
         } else {
@@ -658,13 +711,13 @@ const VirtualMode = () => {
                         Puntos: {scores[currentPlayer] ?? 0}
                     </Text>
 
-                    <TouchableOpacity
+                    <Touchable
                         onPress={() => setFiguresModalVisible(true)}
                     >
                         <Text style={styles.linkText}>
                             Figuras por completar
                         </Text>
-                    </TouchableOpacity>
+                    </Touchable>
                 </Animated.View>
 
                 {roundBanner && (
@@ -707,8 +760,8 @@ const VirtualMode = () => {
                             }))
                             : diceResults
                         ).map((die, index) => (
-                            // Pressable en vez de TouchableOpacity: la opacidad animada
-                            // de TouchableOpacity (Animated nativo) se mezclaba con las
+                            // Pressable en vez de Touchable: la opacidad animada
+                            // de Touchable (Animated nativo) se mezclaba con las
                             // animaciones de Reanimated del dado y provocaba el error
                             // "disconnectAnimatedNodeFromView" al cambiar `disabled`.
                             <Pressable
@@ -810,7 +863,7 @@ const VirtualMode = () => {
                             Total: {scorePreview.total} puntos
                         </Text>
 
-                        <TouchableOpacity
+                        <Touchable
                             style={[
                                 styles.modalConfirmBtn,
                                 scorePreview.faces.length === 0 &&
@@ -828,29 +881,29 @@ const VirtualMode = () => {
                             <Text style={styles.modalConfirmText}>
                                 Confirmar
                             </Text>
-                        </TouchableOpacity>
+                        </Touchable>
 
-                        <TouchableOpacity
+                        <Touchable
                             style={styles.cancelBtn}
                             onPress={() => setConfirmModalVisible(false)}
                         >
                             <Text style={styles.cancelText}>
                                 Cancelar
                             </Text>
-                        </TouchableOpacity>
+                        </Touchable>
                     </View>
                 </View>
             </Modal>
 
 
-            <TouchableOpacity
+            <Touchable
                 style={styles.viewScoresBtn}
                 onPress={() => setScoresModalVisible(true)}
             >
                 <Text style={styles.viewScoresText}>
                     Ver puntuaciones
                 </Text>
-            </TouchableOpacity>
+            </Touchable>
 
             <ScoresModal
                 visible={scoresModalVisible}

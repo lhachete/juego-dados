@@ -32,6 +32,11 @@ const AnimatedDie = ({
         setDisplayFaceState(f);
     };
 
+    // true mientras el dado gira y aún no ha mostrado su cara final.
+    // Mientras tanto no se aplica el aspecto de "deshabilitado", que si no
+    // delataba el resultado antes de verlo.
+    const [spinning, setSpinning] = useState(false);
+
     const intervalRef = useRef(null);
     const startTimeoutRef = useRef(null);
     const revealTimeoutRef = useRef(null);
@@ -73,6 +78,7 @@ const AnimatedDie = ({
         // Si el dado está bloqueado, no se anima.
         if (locked) {
             clearTimers();
+            setSpinning(false);
             setDisplayFace(face ?? null);
 
             cancelAnimation(rotate);
@@ -92,6 +98,7 @@ const AnimatedDie = ({
         // Fuera de tirada: mostrar la cara definitiva (o nada si no hay).
         if (!isRolling) {
             clearTimers();
+            setSpinning(false);
             setDisplayFace(face ?? null);
 
             opacity.value = withTiming(1, { duration: 120 });
@@ -103,6 +110,7 @@ const AnimatedDie = ({
         }
 
         // --- Tirada ---
+        setSpinning(true);
         const wasEmpty = !displayFaceRef.current;
 
         if (wasEmpty) {
@@ -200,7 +208,10 @@ const AnimatedDie = ({
             revealTimeoutRef.current = null;
             // Si todavía no hay cara final, seguimos mostrando la última aleatoria
             // en vez de dejar el hueco vacío.
-            if (face) setDisplayFace(face);
+            if (face) {
+                setDisplayFace(face);
+                setSpinning(false);
+            }
         }, DIE_ROLL_DURATION + delay);
 
         return clearTimers;
@@ -229,7 +240,7 @@ const AnimatedDie = ({
                     source={displayFace.img}
                     // La opacidad de "desactivado" va en la imagen porque la
                     // del contenedor la controla la animación.
-                    style={[styles.diceImg, disabled && styles.diceDisabled]}
+                    style={[styles.diceImg, disabled && !spinning && styles.diceDisabled]}
                     resizeMode="contain"
                 />
             )}
