@@ -1,7 +1,8 @@
-import { View, Text, TextInput, StyleSheet, TouchableOpacity, Alert } from "react-native";
+import { View, Text, TextInput, StyleSheet, Alert } from "react-native";
 import { router } from "expo-router";
 import { useGame } from "../contexts/GameContext";
 import { validatePlayers } from "biblioteca/funcioteca";
+import TouchableOpacity from "../components/Touchable";
 import Button from "../components/Button";
 
 const PlayerSelection = () => {

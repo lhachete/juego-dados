@@ -1,4 +1,5 @@
-import { View, Image, TouchableOpacity, StyleSheet } from "react-native";
+import { View, Image, StyleSheet } from "react-native";
+import TouchableOpacity from "../components/Touchable";
 
 const FiguresGrid = ({
   faces,

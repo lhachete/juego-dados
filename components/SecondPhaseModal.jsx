@@ -1,4 +1,5 @@
-import { Modal, View, Text, StyleSheet, TouchableOpacity } from "react-native";
+import { Modal, View, Text, StyleSheet } from "react-native";
+import TouchableOpacity from "../components/Touchable";
 
 const SecondPhaseModal = ({ visible, players, scores, onSelect }) => {
   return (

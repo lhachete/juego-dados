@@ -1,4 +1,5 @@
-import { Modal, View, Text, TouchableOpacity, StyleSheet } from "react-native";
+import { Modal, View, Text, StyleSheet } from "react-native";
+import TouchableOpacity from "../components/Touchable";
 
 const ExitGameModal = ({ visible, onExit, onFinish, onCancel }) => {
     return (

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { View, Text, Image, TouchableOpacity, Pressable, Modal, StyleSheet, Alert, Vibration } from "react-native";
+import { View, Text, Image, Pressable, Modal, StyleSheet, Alert, Vibration } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 import { router } from "expo-router";
 import { useGame } from "../contexts/GameContext";
@@ -9,6 +9,7 @@ import FiguresGridModal from "../components/FiguresGridModal";
 import DADES from "./dades.jsx";
 import FiguresGrid from "components/FiguresGrid";
 import SecondPhaseModal from "components/SecondPhaseModal";
+import TouchableOpacity from "../components/Touchable";
 import AnimatedDie, { DIE_ROLL_DURATION } from "../components/AnimatedDie";
 
 // Retardo entre dado y dado al tirar (ms) y duración total de la tirada.
@@ -64,7 +65,7 @@ const VirtualMode = () => {
 
     const [diceResults, setDiceResults] = useState([]);
     const [isRolling, setIsRolling] = useState(false);
-    const [rollsLeft, setRollsLeft] = useState(15);
+    const [rollsLeft, setRollsLeft] = useState(3);
     const [scorePreview, setScorePreview] = useState({
         faces: [],
         total: 0,
