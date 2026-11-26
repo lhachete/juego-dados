@@ -9,7 +9,11 @@ import FiguresGridModal from "../components/FiguresGridModal";
 import DADES from "./dades.jsx";
 import FiguresGrid from "components/FiguresGrid";
 import SecondPhaseModal from "components/SecondPhaseModal";
-import AnimatedDie from "../components/AnimatedDie";
+import AnimatedDie, { DIE_ROLL_DURATION } from "../components/AnimatedDie";
+
+// Retardo entre dado y dado al tirar (ms) y duración total de la tirada.
+const DIE_DELAY_STEP = 100;
+const ROLL_TOTAL_MS = DIE_ROLL_DURATION + DIE_DELAY_STEP * 4 + 80;
 import AnimatedRollButton from "../components/AnimatedRollButton";
 import EventBanner from "../components/EventBanner";
 
@@ -122,9 +126,13 @@ const VirtualMode = () => {
             };
         });
 
-        await new Promise((resolve) => setTimeout(resolve, 950));
-
+        // Los resultados se pasan ya a los dados: cada uno anima con su
+        // retardo y descubre su cara al terminar (antes llegaban al final y
+        // en la primera tirada los dados aparecían de golpe).
         setDiceResults(finalDice);
+
+        await new Promise((resolve) => setTimeout(resolve, ROLL_TOTAL_MS));
+
         setRollsLeft((prev) => prev - 1);
         setIsRolling(false);
     };
@@ -336,15 +344,15 @@ const VirtualMode = () => {
             return { value: face.id, face, locked: false };
         });
 
-        // La animación solo se ejecuta en dados no bloqueados.
-        setDiceResults(prev => prev.map(die => ({ ...die, locked: false })));
+        // Dados nuevos (desbloqueados) y bonus a la vez, en el mismo render,
+        // para que el efecto de bonus no borre la figura de bonus.
+        setBonusPoints(prev => prev + 5 * baseValue);
+        setDiceResults(newDice);
         setIsBonusMode(false);
         setIsRolling(true);
 
-        await new Promise(resolve => setTimeout(resolve, 760));
+        await new Promise(resolve => setTimeout(resolve, ROLL_TOTAL_MS));
 
-        setDiceResults(newDice);
-        setBonusPoints(prev => prev + 5 * baseValue);
         setRollsLeft(prev => prev - 1);
         setIsRolling(false);
     };
@@ -611,7 +619,8 @@ const VirtualMode = () => {
                                     faces={DADES}
                                     locked={die.locked}
                                     isRolling={isRolling && !die.locked}
-                                    delay={index * 70}
+                                    delay={index * DIE_DELAY_STEP}
+                                    enterFrom={index % 2 === 0 ? "left" : "right"}
                                     disabled={isDiceDisabled(die)}
                                 />
                             </Pressable>
