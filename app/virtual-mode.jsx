@@ -16,6 +16,16 @@ const DIE_DELAY_STEP = 100;
 const ROLL_TOTAL_MS = DIE_ROLL_DURATION + DIE_DELAY_STEP * 4 + 80;
 import AnimatedRollButton from "../components/AnimatedRollButton";
 import EventBanner from "../components/EventBanner";
+import Animated, {
+    useSharedValue,
+    useAnimatedStyle,
+    withTiming,
+    Easing,
+} from "react-native-reanimated";
+
+// Transición de cambio de ronda en la cabecera (ms)
+const FADE_MS = 350;
+const ROUND_BANNER_HOLD_MS = 1600;
 
 const VirtualMode = () => {
     const {
@@ -54,7 +64,7 @@ const VirtualMode = () => {
 
     const [diceResults, setDiceResults] = useState([]);
     const [isRolling, setIsRolling] = useState(false);
-    const [rollsLeft, setRollsLeft] = useState(3);
+    const [rollsLeft, setRollsLeft] = useState(15);
     const [scorePreview, setScorePreview] = useState({
         faces: [],
         total: 0,
@@ -65,6 +75,62 @@ const VirtualMode = () => {
     const [isBonusMode, setIsBonusMode] = useState(false);
 
     const [banner, setBanner] = useState(null);
+
+    // --- Transición de ronda en la cabecera ---
+    // Número de ronda que se ve: cambia a mitad de la transición, no al instante.
+    const [displayedRound, setDisplayedRound] = useState(round);
+    const [roundBanner, setRoundBanner] = useState(null); // { eyebrow, title, subtitle }
+    const [isRoundTransition, setIsRoundTransition] = useState(false);
+    const roundTransitionTimers = useRef([]);
+    const infoOpacity = useSharedValue(1);
+    const roundTextOpacity = useSharedValue(1);
+    const roundBannerOpacity = useSharedValue(0);
+
+    const clearRoundTransition = () => {
+        roundTransitionTimers.current.forEach(clearTimeout);
+        roundTransitionTimers.current = [];
+    };
+
+    const fade = (sv, to) => {
+        sv.value = withTiming(to, { duration: FADE_MS, easing: Easing.inOut(Easing.quad) });
+    };
+
+    // 1) Se desvanece la cabecera (ronda + turno, puntos, figuras, texto).
+    // 2) Cambia el número de ronda y aparece el aviso de ronda en ese hueco.
+    // 3) Se desvanece el aviso y vuelve la cabecera con el nuevo turno.
+    const playRoundTransition = (newRound, content) => {
+        clearRoundTransition();
+        setIsRoundTransition(true);
+
+        fade(infoOpacity, 0);
+        fade(roundTextOpacity, 0);
+
+        const later = (fn, ms) => roundTransitionTimers.current.push(setTimeout(fn, ms));
+
+        later(() => {
+            setDisplayedRound(newRound);
+            setRoundBanner(content);
+            fade(roundTextOpacity, 1);
+            fade(roundBannerOpacity, 1);
+        }, FADE_MS);
+
+        later(() => {
+            fade(roundBannerOpacity, 0);
+        }, FADE_MS * 2 + ROUND_BANNER_HOLD_MS);
+
+        later(() => {
+            setRoundBanner(null);
+            fade(infoOpacity, 1);
+        }, FADE_MS * 3 + ROUND_BANNER_HOLD_MS);
+
+        later(() => {
+            setIsRoundTransition(false);
+        }, FADE_MS * 4 + ROUND_BANNER_HOLD_MS);
+    };
+
+    const infoStyle = useAnimatedStyle(() => ({ opacity: infoOpacity.value }));
+    const roundTextStyle = useAnimatedStyle(() => ({ opacity: roundTextOpacity.value }));
+    const roundBannerStyle = useAnimatedStyle(() => ({ opacity: roundBannerOpacity.value }));
     const prevTurnRef = useRef(null);
     const lastScoreRef = useRef(null);
     const bannerTimerRef = useRef(null);
@@ -463,16 +529,14 @@ const VirtualMode = () => {
             lastScore && lastScore.player === previous.player;
 
 
-        const showRoundBanner = (transition = false) => {
-            showBanner(
-                `RONDA ${round}`,
-                round === 7
-                    ? "¡Comienza la segunda fase!"
-                    : `Turno de ${currentPlayer}`,
-                "#60A5FA",
-                "round",
-                transition
-            );
+        // El cambio de ronda ya no va en un banner en medio de la pantalla:
+        // es una transición con fundido en la cabecera.
+        const showRoundBanner = () => {
+            playRoundTransition(round, {
+                eyebrow: "⚔️ NUEVA RONDA ⚔️",
+                title: `RONDA ${round}`,
+                subtitle: `Empieza ${currentPlayer}`,
+            });
         };
 
         const showScoreBanner = () => {
@@ -515,10 +579,11 @@ const VirtualMode = () => {
             if (hasPreviousScore) {
                 showScoreBanner();
 
+                // Cuando el banner de puntos ya se está yendo.
                 bannerTimerRef.current = setTimeout(() => {
-                    showRoundBanner(true);
+                    showRoundBanner();
                     bannerTimerRef.current = null;
-                }, 2600);
+                }, 2700);
             } else {
                 showRoundBanner();
             }
@@ -552,32 +617,68 @@ const VirtualMode = () => {
             if (bannerTimerRef.current) {
                 clearTimeout(bannerTimerRef.current);
             }
+            clearRoundTransition();
         };
     }, []);
+
+    // Partida nueva o reinicio: la ronda mostrada vuelve a 1 sin transición.
+    useEffect(() => {
+        if (round === 1) {
+            clearRoundTransition();
+            setDisplayedRound(1);
+            setRoundBanner(null);
+            setIsRoundTransition(false);
+            infoOpacity.value = 1;
+            roundTextOpacity.value = 1;
+            roundBannerOpacity.value = 0;
+        }
+    }, [round]);
 
 
     return (
         <View style={styles.container}>
 
-            <Text style={styles.roundText}>
-                Ronda {round} / {TOTAL_ROUNDS}
-            </Text>
+            <Animated.Text style={[styles.roundText, roundTextStyle]}>
+                Ronda {displayedRound} / {TOTAL_ROUNDS}
+            </Animated.Text>
 
-            <Text style={styles.title}>
-                Turno de {currentPlayer}
-            </Text>
+            {/* Cabecera del turno. En el cambio de ronda se desvanece y en su
+                lugar aparece el aviso de ronda, sin solaparse. */}
+            <View style={styles.headerArea}>
+                <Animated.View
+                    style={[styles.headerInfo, infoStyle]}
+                    pointerEvents={isRoundTransition ? "none" : "auto"}
+                >
+                    <Text style={styles.title}>
+                        Turno de {currentPlayer}
+                    </Text>
 
-            <Text style={styles.currentPlayerScore}>
-                Puntos: {scores[currentPlayer] ?? 0}
-            </Text>
+                    <Text style={styles.currentPlayerScore}>
+                        Puntos: {scores[currentPlayer] ?? 0}
+                    </Text>
 
-            <TouchableOpacity
-                onPress={() => setFiguresModalVisible(true)}
-            >
-                <Text style={styles.linkText}>
-                    Figuras por completar
-                </Text>
-            </TouchableOpacity>
+                    <TouchableOpacity
+                        onPress={() => setFiguresModalVisible(true)}
+                    >
+                        <Text style={styles.linkText}>
+                            Figuras por completar
+                        </Text>
+                    </TouchableOpacity>
+                </Animated.View>
+
+                {roundBanner && (
+                    <Animated.View
+                        style={[styles.roundBanner, roundBannerStyle]}
+                        pointerEvents="none"
+                    >
+                        <Text style={styles.roundBannerEyebrow}>{roundBanner.eyebrow}</Text>
+                        <Text style={styles.roundBannerTitle}>{roundBanner.title}</Text>
+                        {!!roundBanner.subtitle && (
+                            <Text style={styles.roundBannerSubtitle}>{roundBanner.subtitle}</Text>
+                        )}
+                    </Animated.View>
+                )}
+            </View>
 
             <FiguresGridModal
                 visible={figuresModalVisible}
@@ -587,13 +688,13 @@ const VirtualMode = () => {
             />
 
             <View style={styles.virtualActionArea}>
-                <View style={styles.topArea}>
+                <Animated.View style={[styles.topArea, infoStyle]}>
                     <Text style={styles.textInfo}>
                         {rollsLeft === 0
                             ? "Selecciona los dados que te quieras anotar"
                             : "Selecciona los dados que quieras conservar"}
                     </Text>
-                </View>
+                </Animated.View>
 
                 <View style={styles.middleArea}>
                     <View style={styles.diceRow}>
@@ -638,7 +739,7 @@ const VirtualMode = () => {
                         isRolling={isRolling}
                         rollsLeft={rollsLeft}
                         onPress={
-                            awaitingPhaseChoice
+                            awaitingPhaseChoice || isRoundTransition
                                 ? () => {}
                                 : isBonusMode
                                 ? handleBonusRoll
@@ -765,13 +866,10 @@ const VirtualMode = () => {
                     startSecondPhase(type);
                     setPhaseModalVisible(false);
                     setAwaitingPhaseChoice(false);
-                    setBanner({
-                        id: Date.now(),
-                        type: "round",
-                        eyebrow: "⚔️ RONDA 7 ⚔️",
-                        title: "SEGUNDA TANDA",
-                        subtitle: `Empieza por ${type === "negras" ? "Negras" : "Ases"} · Turno de ${currentPlayer}`,
-                        color: "#60A5FA",
+                    playRoundTransition(round, {
+                        eyebrow: "⚔️ SEGUNDA TANDA ⚔️",
+                        title: `RONDA ${round}`,
+                        subtitle: `Por ${type === "negras" ? "Negras" : "Ases"} · Empieza ${currentPlayer}`,
                     });
                 }}
             />
@@ -808,6 +906,38 @@ export default VirtualMode;
 
 
 const styles = StyleSheet.create({
+    headerArea: {
+        width: "100%",
+        alignItems: "center",
+        justifyContent: "center",
+    },
+    headerInfo: {
+        alignItems: "center",
+    },
+    roundBanner: {
+        ...StyleSheet.absoluteFillObject,
+        alignItems: "center",
+        justifyContent: "center",
+    },
+    roundBannerEyebrow: {
+        color: "#9CA3AF",
+        fontSize: 13,
+        fontWeight: "700",
+        letterSpacing: 2,
+        marginBottom: 4,
+    },
+    roundBannerTitle: {
+        color: "#60A5FA",
+        fontSize: 30,
+        fontWeight: "900",
+        letterSpacing: 3,
+    },
+    roundBannerSubtitle: {
+        color: "white",
+        fontSize: 17,
+        fontWeight: "600",
+        marginTop: 4,
+    },
     blockOverlay: {
         ...StyleSheet.absoluteFillObject,
         backgroundColor: "rgba(0, 0, 0, 0.65)",
