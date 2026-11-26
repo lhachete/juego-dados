@@ -1,12 +1,14 @@
 import { Pressable, Text, StyleSheet } from "react-native";
 
-const Button = ({ title, onPress, variant = "filled" }) => {
+const Button = ({ title, onPress, variant = "filled", disabled = false }) => {
   return (
     <Pressable
       onPress={onPress}
+      disabled={disabled}
       style={[
         styles.base,
-        variant === "filled" ? styles.filled : styles.outline
+        variant === "filled" ? styles.filled : styles.outline,
+        disabled && styles.disabled,
       ]}
     >
       <Text style={[styles.text, variant === "filled" ? styles.textFilled : styles.textOutline]}>
@@ -24,6 +26,9 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     marginBottom: 16, // mb-4 (4*4)
+  },
+  disabled: {
+    opacity: 0.4,
   },
   filled: {
     backgroundColor: "#facc15", // bg-yellow-500

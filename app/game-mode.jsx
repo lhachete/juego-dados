@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { View, Text, StyleSheet } from "react-native";
 import Button from "../components/Button";
+import ComingSoonButton from "../components/ComingSoonButton";
 import { useGame } from "../contexts/GameContext";
 import { router } from "expo-router";
 
@@ -26,12 +27,8 @@ const GameMode = () => {
         variant={selectedMode === "classic" ? "filled" : "outline"}
       />
 
-      {/* Botón Modo Crazy */}
-      <Button
-        title="Modo Crazy"
-        onPress={() => handleSelectMode("crazy")}
-        variant={selectedMode === "crazy" ? "filled" : "outline"}
-      />
+      {/* Botón Modo Crazy: aún sin lógica */}
+      <ComingSoonButton title="Modo Crazy" />
 
       {/* Opciones del modo Clásico */}
       {selectedMode === "classic" && (
