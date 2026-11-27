@@ -19,6 +19,9 @@ export const GameProvider = ({ children }) => {
 
   const [disabledFaces, setDisabledFaces] = useState({});
   const [usedFaces, setUsedFaces] = useState({});
+  // Hoja de puntos para el Marcador:
+  // { jugador: { first: { figura: puntos }, second: { figura: puntos } } }
+  const [sheet, setSheet] = useState({});
   const TOTAL_ROUNDS = 12;
 
   const startGame = () => {
@@ -36,6 +39,7 @@ export const GameProvider = ({ children }) => {
     });
 
     setDisabledFaces(initialDisabled);
+    setSheet({});
     setScores(initialScores);
     setUsedFaces(initialUsedFaces);
     setIsGameStarted(true);
@@ -66,6 +70,7 @@ export const GameProvider = ({ children }) => {
     setIsGameStarted(false);
     setUsedFaces({});
     setDisabledFaces({});
+    setSheet({});
   };
 
   const resetGame = () => {
@@ -90,6 +95,18 @@ export const GameProvider = ({ children }) => {
     }));
   };
   
+
+  // Apunta en la hoja lo que se anotó en una figura (en la tanda actual).
+  const addSheetEntry = (player, faceId, points) => {
+    const tanda = gamePhase === "second" ? "second" : "first";
+    setSheet(prev => ({
+      ...prev,
+      [player]: {
+        ...(prev[player] || {}),
+        [tanda]: { ...(prev[player]?.[tanda] || {}), [faceId]: points },
+      },
+    }));
+  };
 
   const addUsedFace = (player, faceId) => {
     setUsedFaces(prev => {
@@ -198,6 +215,8 @@ export const GameProvider = ({ children }) => {
         usedFaces,
         addUsedFace,
         addScore,
+        sheet,
+        addSheetEntry,
         startSecondPhase,
         gamePhase,
         advanceGame,

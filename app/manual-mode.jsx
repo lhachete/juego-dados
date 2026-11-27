@@ -1,10 +1,10 @@
 import { useState, useEffect } from "react";
 import { View, Text, StyleSheet, Modal, Image } from "react-native";
+import Touchable from "../components/Touchable";
 import { useNavigation } from "@react-navigation/native";
 import { router } from "expo-router";
 import { useGame } from "../contexts/GameContext";
-import TouchableOpacity from "../components/Touchable";
-import ScoresModal from "../components/ScoresModal";
+import ScoreboardModal from "../components/ScoreboardModal";
 import ExitGameModal from "../components/ExitGameModal";
 import SecondPhaseModal from "../components/SecondPhaseModal";
 import FiguresGrid from "../components/FiguresGrid";
@@ -13,7 +13,8 @@ import DADES from "./dades.jsx";
 const ManualMode = () => {
     const { players, scores, setScores, turn, round, TOTAL_ROUNDS,
         scoresModalVisible, setScoresModalVisible, exitGame, finishGame, isGameStarted,
-        startGame, resetGame, disabledFaces, setDisabledFaces, startSecondPhase, gamePhase, advanceGame
+        startGame, resetGame, disabledFaces, setDisabledFaces, startSecondPhase, gamePhase, advanceGame,
+        sheet, addSheetEntry
     } = useGame();
     const [selectedFace, setSelectedFace] = useState(null); 
 
@@ -42,6 +43,8 @@ const ManualMode = () => {
             ...scores,
             [currentPlayer]: prev + added,
         });
+
+        addSheetEntry(currentPlayer, selectedFace.id, added);
 
         setDisabledFaces({ ...disabledFaces,
             [currentPlayer]: [...disabledFaces[currentPlayer], selectedFace.id]
@@ -95,12 +98,12 @@ const ManualMode = () => {
                 variant="manual"
             />
 
-            <TouchableOpacity
+            <Touchable
                 style={styles.viewScoresBtn}
                 onPress={() => setScoresModalVisible(true)}
             >
-                <Text style={styles.viewScoresText}>Ver puntuaciones</Text>
-            </TouchableOpacity>
+                <Text style={styles.viewScoresText}>📊 Marcador</Text>
+            </Touchable>
 
             <Modal transparent visible={modalVisible} animationType="fade">
                 <View style={styles.modalBackdrop}>
@@ -115,7 +118,7 @@ const ManualMode = () => {
                                 const isSelected = num === selectedCount;
 
                                 return (
-                                    <TouchableOpacity
+                                    <Touchable
                                         key={num}
                                         style={[
                                             styles.countBtn,
@@ -124,12 +127,12 @@ const ManualMode = () => {
                                         onPress={() => setSelectedCount(num)}
                                     >
                                         <Text style={styles.countText}>{num}</Text>
-                                    </TouchableOpacity>
+                                    </Touchable>
                                 );
                             })}
                         </View>
 
-                        <TouchableOpacity
+                        <Touchable
                             style={[
                                 styles.modalConfirmBtn,
                                 selectedCount === null && { opacity: 0.3 },
@@ -139,9 +142,9 @@ const ManualMode = () => {
                             onPress={handleConfirmCount}
                         >
                             <Text style={styles.modalConfirmText}>Confirmar</Text>
-                        </TouchableOpacity>
+                        </Touchable>
 
-                        <TouchableOpacity
+                        <Touchable
                             style={styles.cancelBtn}
                             onPress={() => {
                                 setModalVisible(false);
@@ -150,7 +153,7 @@ const ManualMode = () => {
                             }}
                         >
                             <Text style={styles.cancelText}>Cancelar</Text>
-                        </TouchableOpacity>
+                        </Touchable>
                     </View>
 
                 </View>
@@ -166,11 +169,14 @@ const ManualMode = () => {
                 }}
             />
 
-            <ScoresModal
+            <ScoreboardModal
                 visible={scoresModalVisible}
-                players={players}
-                scores={scores}
                 onClose={() => setScoresModalVisible(false)}
+                players={players.map((p) => ({ id: p, nickname: p }))}
+                scores={scores}
+                sheet={sheet}
+                faces={DADES}
+                currentId={currentPlayer}
             />
 
             <ExitGameModal
@@ -347,16 +353,20 @@ const styles = StyleSheet.create({
         fontWeight: "700",
         marginBottom: 10,
     },
+    // Botón "📊 Marcador" (mismo estilo que en virtual y online).
     viewScoresBtn: {
         marginTop: 20,
-        paddingVertical: 10,
-        paddingHorizontal: 30,
-        borderRadius: 10,
+        paddingVertical: 8,
+        paddingHorizontal: 20,
+        borderRadius: 20,
+        borderWidth: 1,
+        borderColor: "#4B5563",
+        backgroundColor: "#1F2937",
     },
     viewScoresText: {
-        color: "#FACC15",
-        fontSize: 18,
-        fontWeight: "600",
+        color: "white",
+        fontSize: 16,
+        fontWeight: "700",
     },
 
 });

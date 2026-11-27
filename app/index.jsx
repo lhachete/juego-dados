@@ -3,7 +3,6 @@ import { View, Image, StyleSheet } from "react-native";
 import { router } from "expo-router";
 import Animated, { FadeInDown, FadeOutUp } from "react-native-reanimated";
 import Button from "../components/Button";
-import ComingSoonButton from "../components/ComingSoonButton";
 import Title from "../components/Title";
 import logo from "../assets/logo.png";
 import TextButton from "../components/TextButton";
@@ -41,8 +40,12 @@ const Index = () => {
                         onPress={() => router.push("/game-mode")}
                     />
 
-                    {/* Multijugador con un dispositivo por jugador: aún sin lógica. */}
-                    <ComingSoonButton title="Jugar online" />
+                    {/* Multijugador con un dispositivo por jugador (Supabase). */}
+                    <Button
+                        title="Jugar online"
+                        variant="outline"
+                        onPress={() => router.push("/online")}
+                    />
                 </Animated.View>
             )}
 

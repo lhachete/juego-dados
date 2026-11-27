@@ -1,12 +1,12 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { View, Text, Image, Pressable, Modal, StyleSheet, Alert } from "react-native";
+import { View, Text, Image, Pressable, Modal, StyleSheet, Alert, Vibration } from "react-native";
 import Touchable from "../components/Touchable";
 import { useNavigation } from "@react-navigation/native";
 import { router } from "expo-router";
 import { useGame } from "../contexts/GameContext";
-import ScoresModal from "../components/ScoresModal";
+import ScoreboardModal from "../components/ScoreboardModal";
+import FacesStrip from "../components/FacesStrip";
 import ExitGameModal from "../components/ExitGameModal";
-import FiguresGridModal from "../components/FiguresGridModal";
 import DADES from "./dades.jsx";
 import FiguresGrid from "components/FiguresGrid";
 import SecondPhaseModal from "components/SecondPhaseModal";
@@ -45,6 +45,8 @@ const VirtualMode = () => {
         advanceGame,
         usedFaces,
         addUsedFace,
+        sheet,
+        addSheetEntry,
         disabledFaces,
         startSecondPhase,
         gamePhase,
@@ -55,7 +57,6 @@ const VirtualMode = () => {
     const currentPlayer = players[turn];
 
     const [exitModalVisible, setExitModalVisible] = useState(false);
-    const [figuresModalVisible, setFiguresModalVisible] = useState(false);
     const [confirmModalVisible, setConfirmModalVisible] = useState(false);
     const [phaseModalVisible, setPhaseModalVisible] = useState(false);
     const [zeroFaceSelected, setZeroFaceSelected] = useState(null);
@@ -76,6 +77,8 @@ const VirtualMode = () => {
     const [isBonusMode, setIsBonusMode] = useState(false);
 
     const [banner, setBanner] = useState(null);
+    // true mientras se ve un banner (puntos, turno...): no se puede tirar.
+    const [bannerBusy, setBannerBusy] = useState(false);
 
     // --- Transición de ronda en la cabecera ---
     // Número de ronda que se ve: cambia a mitad de la transición, no al instante.
@@ -412,6 +415,7 @@ const VirtualMode = () => {
 
             addUsedFace(currentPlayer, zeroFaceSelected.id);
             addScore(currentPlayer, 0);
+            addSheetEntry(currentPlayer, zeroFaceSelected.id, 0);
 
             setZeroFaceSelected(null);
         } else {
@@ -422,6 +426,7 @@ const VirtualMode = () => {
                 (nonAces.length > 0 ? nonAces[0].id : 6);
 
             addUsedFace(currentPlayer, faceId);
+            addSheetEntry(currentPlayer, faceId, scorePreview.total);
         }
 
         setDiceResults([]);
@@ -467,6 +472,19 @@ const VirtualMode = () => {
     };
 
 
+
+
+    // Bloquea el botón mientras dura el banner (mismos tiempos que EventBanner:
+    // entra 600 ms, se queda 2 s y sale 600 ms; la transición dura 2,9 s).
+    useEffect(() => {
+        if (!banner) return;
+        setBannerBusy(true);
+        const t = setTimeout(
+            () => setBannerBusy(false),
+            banner.transition ? 2900 : 3200
+        );
+        return () => clearTimeout(t);
+    }, [banner?.id]);
 
 
     useEffect(() => {
@@ -713,12 +731,17 @@ const VirtualMode = () => {
                         Puntos: {scores[currentPlayer] ?? 0}
                     </Text>
 
+                    {/* Figuras que le quedan al jugador, siempre a la vista. */}
+                    <FacesStrip
+                        faces={DADES}
+                        activeIds={DADES.map(f => f.id).filter(id => !facesToDisable.includes(id))}
+                    />
+
                     <Touchable
-                        onPress={() => setFiguresModalVisible(true)}
+                        style={styles.scoreboardBtn}
+                        onPress={() => setScoresModalVisible(true)}
                     >
-                        <Text style={styles.linkText}>
-                            Figuras por completar
-                        </Text>
+                        <Text style={styles.scoreboardText}>📊 Marcador</Text>
                     </Touchable>
                 </Animated.View>
 
@@ -735,13 +758,6 @@ const VirtualMode = () => {
                     </Animated.View>
                 )}
             </View>
-
-            <FiguresGridModal
-                visible={figuresModalVisible}
-                onClose={() => setFiguresModalVisible(false)}
-                faces={DADES}
-                usedFaces={facesToDisable}
-            />
 
             <View style={styles.virtualActionArea}>
                 <Animated.View style={[styles.topArea, infoStyle]}>
@@ -794,8 +810,9 @@ const VirtualMode = () => {
                     <AnimatedRollButton
                         isRolling={isRolling}
                         rollsLeft={rollsLeft}
+                        disabled={bannerBusy || isRoundTransition || awaitingPhaseChoice}
                         onPress={
-                            awaitingPhaseChoice || isRoundTransition
+                            awaitingPhaseChoice || isRoundTransition || bannerBusy
                                 ? () => {}
                                 : isBonusMode
                                 ? handleBonusRoll
@@ -898,20 +915,14 @@ const VirtualMode = () => {
             </Modal>
 
 
-            <Touchable
-                style={styles.viewScoresBtn}
-                onPress={() => setScoresModalVisible(true)}
-            >
-                <Text style={styles.viewScoresText}>
-                    Ver puntuaciones
-                </Text>
-            </Touchable>
-
-            <ScoresModal
+            <ScoreboardModal
                 visible={scoresModalVisible}
-                players={players}
-                scores={scores}
                 onClose={() => setScoresModalVisible(false)}
+                players={players.map(p => ({ id: p, nickname: p }))}
+                scores={scores}
+                sheet={sheet}
+                faces={DADES}
+                currentId={currentPlayer}
             />
 
             <SecondPhaseModal
@@ -1071,6 +1082,22 @@ const styles = StyleSheet.create({
         flex: 1.5,
         justifyContent: "center",
         alignItems: "center",
+    },
+
+    scoreboardBtn: {
+        marginTop: 10,
+        paddingVertical: 6,
+        paddingHorizontal: 16,
+        borderRadius: 20,
+        borderWidth: 1,
+        borderColor: "#4B5563",
+        backgroundColor: "#1F2937",
+    },
+
+    scoreboardText: {
+        color: "white",
+        fontSize: 15,
+        fontWeight: "700",
     },
 
     viewScoresBtn: {

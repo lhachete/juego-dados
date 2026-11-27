@@ -169,13 +169,16 @@ const EndGame = () => {
             </View>
           )}
 
-          <Button
-            title="Jugar otra vez"
-            onPress={() => {
-              resetRoundState();
-              router.replace(`/${playType}-mode`);
-            }}
-          />
+          {/* En online la revancha se hace creando otra sala. */}
+          {playType !== "online" && (
+            <Button
+              title="Jugar otra vez"
+              onPress={() => {
+                resetRoundState();
+                router.replace(`/${playType}-mode`);
+              }}
+            />
+          )}
 
           <Button
             title="Volver al inicio"

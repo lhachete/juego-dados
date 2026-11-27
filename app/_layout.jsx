@@ -5,7 +5,6 @@ import { ReducedMotionConfig, ReduceMotion } from "react-native-reanimated";
 export default function RootLayout() {
   return (
     <GameProvider>
-      
       <ReducedMotionConfig mode={ReduceMotion.Never} />
       <Stack
         screenOptions={{
@@ -34,6 +33,17 @@ export default function RootLayout() {
 
         <Stack.Screen
           name="virtual-mode"
+          options={{ gestureEnabled: false }}
+        />
+
+        {/* Modo online: no se sale deslizando, se pregunta antes. */}
+        <Stack.Screen
+          name="lobby"
+          options={{ gestureEnabled: false }}
+        />
+
+        <Stack.Screen
+          name="online-game"
           options={{ gestureEnabled: false }}
         />
 
