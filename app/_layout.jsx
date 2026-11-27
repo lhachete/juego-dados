@@ -1,9 +1,12 @@
 import { Stack } from "expo-router";
 import { GameProvider } from "../contexts/GameContext";
+import { ReducedMotionConfig, ReduceMotion } from "react-native-reanimated";
 
 export default function RootLayout() {
   return (
     <GameProvider>
+      
+      <ReducedMotionConfig mode={ReduceMotion.Never} />
       <Stack
         screenOptions={{
           headerShown: false,

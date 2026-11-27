@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { View, Text, Image, Pressable, Modal, StyleSheet, Alert, Vibration } from "react-native";
+import { View, Text, Image, Pressable, Modal, StyleSheet, Alert } from "react-native";
 import Touchable from "../components/Touchable";
 import { useNavigation } from "@react-navigation/native";
 import { router } from "expo-router";
@@ -242,7 +242,9 @@ const VirtualMode = () => {
 
 
     const lockDices = (index) => {
-        if (isRolling || !diceResults[index].face) return;
+        // Al empezar el turno no hay dados todavía (diceResults está vacío y
+        // se pintan huecos): tocar uno rompía la app al leer .face de undefined.
+        if (isRolling || !diceResults[index]?.face) return;
         if (bonusFace !== null) {
 
             const clickedFace = diceResults[index].face;
